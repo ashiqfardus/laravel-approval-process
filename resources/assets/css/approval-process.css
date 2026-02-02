@@ -1,0 +1,338 @@
+/* Approval Process Package Styles */
+
+:root {
+    --approval-primary: #2563eb;
+    --approval-success: #10b981;
+    --approval-warning: #f59e0b;
+    --approval-danger: #ef4444;
+    --approval-info: #3b82f6;
+    --approval-light: #f3f4f6;
+    --approval-dark: #1f2937;
+}
+
+/* Timeline Styles */
+.approval-timeline {
+    position: relative;
+    padding: 20px 0;
+}
+
+.timeline-item {
+    display: flex;
+    margin-bottom: 30px;
+    position: relative;
+}
+
+.timeline-marker {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: var(--approval-primary);
+    color: white;
+    font-weight: bold;
+    margin-right: 20px;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 2;
+}
+
+.timeline-marker.completed {
+    background-color: var(--approval-success);
+}
+
+.timeline-marker.pending {
+    background-color: var(--approval-warning);
+    animation: pulse 2s infinite;
+}
+
+.timeline-marker.rejected {
+    background-color: var(--approval-danger);
+}
+
+.timeline-line {
+    position: absolute;
+    left: 19px;
+    top: 40px;
+    width: 2px;
+    height: 60px;
+    background-color: var(--approval-light);
+}
+
+.timeline-line.completed {
+    background-color: var(--approval-success);
+}
+
+.timeline-content {
+    padding-top: 5px;
+}
+
+.timeline-content h3 {
+    margin: 0 0 10px 0;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.timeline-content p {
+    margin: 5px 0;
+    font-size: 14px;
+    color: #666;
+}
+
+/* Status Badge Styles */
+.approval-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 9999px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.approval-badge.status-approved {
+    background-color: #dcfce7;
+    color: #166534;
+}
+
+.approval-badge.status-rejected {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
+.approval-badge.status-pending {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+.approval-badge.status-in-review {
+    background-color: #dbeafe;
+    color: #1e40af;
+}
+
+.approval-badge.status-draft {
+    background-color: #f3f4f6;
+    color: #374151;
+}
+
+/* Button Styles */
+.approval-btn {
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.approval-btn-primary {
+    background-color: var(--approval-primary);
+    color: white;
+}
+
+.approval-btn-primary:hover {
+    background-color: #1d4ed8;
+}
+
+.approval-btn-success {
+    background-color: var(--approval-success);
+    color: white;
+}
+
+.approval-btn-success:hover {
+    background-color: #059669;
+}
+
+.approval-btn-danger {
+    background-color: var(--approval-danger);
+    color: white;
+}
+
+.approval-btn-danger:hover {
+    background-color: #dc2626;
+}
+
+.approval-btn-warning {
+    background-color: var(--approval-warning);
+    color: white;
+}
+
+.approval-btn-warning:hover {
+    background-color: #d97706;
+}
+
+/* Form Styles */
+.approval-form-group {
+    margin-bottom: 20px;
+}
+
+.approval-form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #374151;
+}
+
+.approval-form-group input,
+.approval-form-group select,
+.approval-form-group textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: border-color 0.3s ease;
+}
+
+.approval-form-group input:focus,
+.approval-form-group select:focus,
+.approval-form-group textarea:focus {
+    outline: none;
+    border-color: var(--approval-primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+/* Card Styles */
+.approval-card {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.approval-card h2 {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0 0 15px 0;
+    color: #1f2937;
+}
+
+.approval-card h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 10px 0;
+    color: #374151;
+}
+
+/* Grid Styles */
+.approval-grid {
+    display: grid;
+    gap: 20px;
+}
+
+.approval-grid-2 {
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.approval-grid-3 {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+
+.approval-grid-4 {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+/* Table Styles */
+.approval-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.approval-table thead {
+    background-color: #f9fafb;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+.approval-table th {
+    padding: 15px;
+    text-align: left;
+    font-weight: 600;
+    color: #374151;
+    font-size: 12px;
+    text-transform: uppercase;
+}
+
+.approval-table td {
+    padding: 15px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.approval-table tbody tr:hover {
+    background-color: #f9fafb;
+}
+
+/* Animations */
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.approval-fade-in {
+    animation: slideIn 0.3s ease-out;
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --approval-dark: #f3f4f6;
+        --approval-light: #1f2937;
+    }
+
+    .approval-card {
+        background-color: #111827;
+        color: #f3f4f6;
+    }
+
+    .approval-form-group input,
+    .approval-form-group select,
+    .approval-form-group textarea {
+        background-color: #1f2937;
+        border-color: #374151;
+        color: #f3f4f6;
+    }
+
+    .approval-table thead {
+        background-color: #1f2937;
+    }
+
+    .approval-table th {
+        color: #d1d5db;
+    }
+
+    .approval-table tbody tr:hover {
+        background-color: #1f2937;
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .approval-grid-2,
+    .approval-grid-3,
+    .approval-grid-4 {
+        grid-template-columns: 1fr;
+    }
+
+    .approval-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}

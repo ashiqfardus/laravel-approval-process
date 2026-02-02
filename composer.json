@@ -1,0 +1,45 @@
+{
+    "name": "ashiqfardus/laravel-approval-process",
+    "description": "Enterprise-grade Laravel approval workflow engine with multi-level approvals, SLA management, and advanced delegation",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Ashiq Fardus",
+            "email": "ashiqfardus@hotmail.com"
+        }
+    ],
+    "require": {
+        "php": "^8.1",
+        "laravel/framework": "^10.0|^11.0|^12.0",
+        "doctrine/dbal": "^3.0",
+        "spatie/laravel-query-builder": "^5.0",
+        "spatie/laravel-activitylog": "^4.0",
+        "symfony/expression-language": "^6.0|^7.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.0",
+        "laravel/pint": "^1.0",
+        "nunomaduro/larastan": "^2.0",
+        "mockery/mockery": "^1.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "ApprovalWorkflow\\ApprovalProcess\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "ApprovalWorkflow\\ApprovalProcess\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "ApprovalWorkflow\\ApprovalProcess\\ApprovalProcessServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
