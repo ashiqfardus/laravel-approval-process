@@ -10,6 +10,16 @@ use Illuminate\Database\Eloquent\Model;
 
 class ApprovalEngine
 {
+    protected ConditionEvaluator $conditionEvaluator;
+    protected ParallelWorkflowManager $parallelManager;
+
+    public function __construct(
+        ConditionEvaluator $conditionEvaluator = null,
+        ParallelWorkflowManager $parallelManager = null
+    ) {
+        $this->conditionEvaluator = $conditionEvaluator ?? new ConditionEvaluator();
+        $this->parallelManager = $parallelManager ?? new ParallelWorkflowManager();
+    }
     /**
      * Submit a request for approval.
      * 
@@ -207,6 +217,31 @@ class ApprovalEngine
      */
     protected function moveToNextStep(ApprovalRequest $request, ApprovalStep $currentStep): void
     {
+        // Check if this is a fork point (start of parallel execution)
+        if ($this->parallelManager->isForkPoint($currentStep)) {
+            $this->parallelManager->forkWorkflow($request, $currentStep);
+            // Don't update current_step_id - request is now in parallel execution
+            return;
+        }
+
+        // Check for conditional routing
+        $requestData = $request->data_snapshot ?? [];
+        $conditionalNextStepId = $this->conditionEvaluator->findNextStep(
+            $request->workflow_id,
+            $currentStep->id,
+            $requestData
+        );
+
+        if ($conditionalNextStepId) {
+            // Conditional route found
+            $nextStep = ApprovalStep::find($conditionalNextStepId);
+            if ($nextStep) {
+                $request->update(['current_step_id' => $nextStep->id]);
+                return;
+            }
+        }
+
+        // Fall back to default sequential routing
         $nextStep = $currentStep->getNextStep();
         
         if ($nextStep) {

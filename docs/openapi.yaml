@@ -1,0 +1,1097 @@
+openapi: 3.0.3
+info:
+  title: Laravel Approval Process API
+  description: |
+    Complete API documentation for the Laravel Approval Process package.
+    
+    ## Features
+    - Multi-level approval workflows
+    - Conditional and parallel workflows
+    - Dynamic workflow modifications
+    - Document management (attachments, templates, signatures)
+    - Reporting and analytics
+    - Real-time updates via WebSockets
+    
+    ## Authentication
+    This API uses Laravel Sanctum for authentication. Include the bearer token in the Authorization header:
+    ```
+    Authorization: Bearer {your-token}
+    ```
+    
+    ## Base URL
+    ```
+    http://your-app.com/api/approval-process
+    ```
+    
+  version: 1.0.0
+  contact:
+    name: Ashiq Fardus
+    email: ashiqfardus@hotmail.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8000/api/approval-process
+    description: Local development server
+  - url: https://api.yourapp.com/api/approval-process
+    description: Production server
+
+tags:
+  - name: Workflows
+    description: Workflow management operations
+  - name: Workflow Steps
+    description: Workflow step operations
+  - name: Approval Requests
+    description: Approval request operations
+  - name: Approvers
+    description: Approver management
+  - name: Delegations
+    description: Delegation operations
+  - name: Notifications
+    description: Notification operations
+  - name: Conditional Workflows
+    description: Conditional workflow operations
+  - name: Parallel Workflows
+    description: Parallel workflow operations
+  - name: Dynamic Workflows
+    description: Dynamic workflow modifications
+  - name: Attachments
+    description: File attachment operations
+  - name: Document Templates
+    description: Document template operations
+  - name: Signatures
+    description: Digital signature operations
+  - name: Analytics
+    description: Analytics and metrics
+  - name: Reports
+    description: Custom and audit reports
+
+security:
+  - bearerAuth: []
+
+paths:
+  # ==================== WORKFLOWS ====================
+  /workflows:
+    get:
+      tags: [Workflows]
+      summary: List all workflows
+      description: Retrieve a paginated list of all workflows
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+        - name: is_active
+          in: query
+          schema:
+            type: boolean
+          description: Filter by active status
+        - name: model_type
+          in: query
+          schema:
+            type: string
+          description: Filter by model type
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Workflow'
+                  meta:
+                    $ref: '#/components/schemas/PaginationMeta'
+    
+    post:
+      tags: [Workflows]
+      summary: Create a new workflow
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - model_type
+              properties:
+                name:
+                  type: string
+                  example: "Purchase Order Approval"
+                model_type:
+                  type: string
+                  example: "App\\Models\\PurchaseOrder"
+                description:
+                  type: string
+                  example: "Multi-level approval for purchase orders"
+                is_active:
+                  type: boolean
+                  default: true
+                auto_start:
+                  type: boolean
+                  default: false
+      responses:
+        '201':
+          description: Workflow created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Workflow'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /workflows/{id}:
+    get:
+      tags: [Workflows]
+      summary: Get workflow details
+      parameters:
+        - $ref: '#/components/parameters/WorkflowId'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Workflow'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    
+    put:
+      tags: [Workflows]
+      summary: Update workflow
+      parameters:
+        - $ref: '#/components/parameters/WorkflowId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                is_active:
+                  type: boolean
+      responses:
+        '200':
+          description: Workflow updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Workflow'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    
+    delete:
+      tags: [Workflows]
+      summary: Delete workflow
+      parameters:
+        - $ref: '#/components/parameters/WorkflowId'
+      responses:
+        '204':
+          description: Workflow deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /workflows/{id}/activate:
+    post:
+      tags: [Workflows]
+      summary: Activate workflow
+      parameters:
+        - $ref: '#/components/parameters/WorkflowId'
+      responses:
+        '200':
+          description: Workflow activated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Workflow activated successfully"
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /workflows/{id}/deactivate:
+    post:
+      tags: [Workflows]
+      summary: Deactivate workflow
+      parameters:
+        - $ref: '#/components/parameters/WorkflowId'
+      responses:
+        '200':
+          description: Workflow deactivated successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ==================== WORKFLOW STEPS ====================
+  /workflows/{id}/steps:
+    get:
+      tags: [Workflow Steps]
+      summary: List workflow steps
+      parameters:
+        - $ref: '#/components/parameters/WorkflowId'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ApprovalStep'
+    
+    post:
+      tags: [Workflow Steps]
+      summary: Add step to workflow
+      parameters:
+        - $ref: '#/components/parameters/WorkflowId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - sequence
+              properties:
+                name:
+                  type: string
+                  example: "Manager Approval"
+                description:
+                  type: string
+                sequence:
+                  type: integer
+                  example: 1
+                approval_type:
+                  type: string
+                  enum: [serial, parallel, any_one]
+                  default: serial
+                sla_hours:
+                  type: integer
+                  example: 24
+                can_edit:
+                  type: boolean
+                  default: false
+      responses:
+        '201':
+          description: Step created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ApprovalStep'
+
+  /steps/{id}:
+    put:
+      tags: [Workflow Steps]
+      summary: Update step
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                sequence:
+                  type: integer
+                sla_hours:
+                  type: integer
+      responses:
+        '200':
+          description: Step updated successfully
+    
+    delete:
+      tags: [Workflow Steps]
+      summary: Delete step
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Step deleted successfully
+
+  /steps/reorder:
+    post:
+      tags: [Workflow Steps]
+      summary: Reorder workflow steps
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - workflow_id
+                - steps
+              properties:
+                workflow_id:
+                  type: integer
+                steps:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      sequence:
+                        type: integer
+      responses:
+        '200':
+          description: Steps reordered successfully
+
+  # ==================== APPROVAL REQUESTS ====================
+  /requests:
+    get:
+      tags: [Approval Requests]
+      summary: List all approval requests
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [draft, submitted, in_progress, approved, rejected, sent_back, held, cancelled]
+        - name: workflow_id
+          in: query
+          schema:
+            type: integer
+        - name: requested_by_user_id
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ApprovalRequest'
+                  meta:
+                    $ref: '#/components/schemas/PaginationMeta'
+    
+    post:
+      tags: [Approval Requests]
+      summary: Create approval request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - workflow_id
+                - requestable_type
+                - requestable_id
+              properties:
+                workflow_id:
+                  type: integer
+                requestable_type:
+                  type: string
+                  example: "App\\Models\\PurchaseOrder"
+                requestable_id:
+                  type: integer
+                data:
+                  type: object
+                  description: Additional request data
+                priority:
+                  type: string
+                  enum: [low, normal, high, urgent]
+                  default: normal
+      responses:
+        '201':
+          description: Request created successfully
+
+  /requests/{id}:
+    get:
+      tags: [Approval Requests]
+      summary: Get request details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ApprovalRequest'
+
+  /requests/{id}/submit:
+    post:
+      tags: [Approval Requests]
+      summary: Submit request for approval
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                comments:
+                  type: string
+      responses:
+        '200':
+          description: Request submitted successfully
+
+  /requests/{id}/approve:
+    post:
+      tags: [Approval Requests]
+      summary: Approve request
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                comments:
+                  type: string
+                  example: "Approved - looks good"
+      responses:
+        '200':
+          description: Request approved successfully
+
+  /requests/{id}/reject:
+    post:
+      tags: [Approval Requests]
+      summary: Reject request
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - comments
+              properties:
+                comments:
+                  type: string
+                  example: "Rejected - insufficient budget"
+      responses:
+        '200':
+          description: Request rejected successfully
+
+  /requests/{id}/send-back:
+    post:
+      tags: [Approval Requests]
+      summary: Send request back to requester
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - comments
+              properties:
+                comments:
+                  type: string
+      responses:
+        '200':
+          description: Request sent back successfully
+
+  /requests/{id}/hold:
+    post:
+      tags: [Approval Requests]
+      summary: Put request on hold
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Request put on hold successfully
+
+  /requests/{id}/cancel:
+    post:
+      tags: [Approval Requests]
+      summary: Cancel request
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Request cancelled successfully
+
+  /requests/{id}/timeline:
+    get:
+      tags: [Approval Requests]
+      summary: Get request timeline
+      description: Returns all actions taken on this request
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ApprovalAction'
+
+  /requests/{id}/change-history:
+    get:
+      tags: [Approval Requests]
+      summary: Get change history
+      description: Returns all changes made to this request
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ApprovalChangeLog'
+
+  # ==================== ATTACHMENTS ====================
+  /requests/{id}/attachments:
+    get:
+      tags: [Attachments]
+      summary: List request attachments
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ApprovalAttachment'
+    
+    post:
+      tags: [Attachments]
+      summary: Upload attachment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                type:
+                  type: string
+                  enum: [supporting_document, receipt, invoice, contract, other]
+                description:
+                  type: string
+      responses:
+        '201':
+          description: Attachment uploaded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ApprovalAttachment'
+
+  /attachments/{id}/download:
+    get:
+      tags: [Attachments]
+      summary: Download attachment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: File download
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+
+  # ==================== ANALYTICS ====================
+  /analytics/dashboard:
+    get:
+      tags: [Analytics]
+      summary: Get dashboard statistics
+      parameters:
+        - name: workflow_id
+          in: query
+          schema:
+            type: integer
+          description: Filter by workflow
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total_requests:
+                    type: integer
+                  pending_requests:
+                    type: integer
+                  approved_requests:
+                    type: integer
+                  rejected_requests:
+                    type: integer
+                  overdue_requests:
+                    type: integer
+                  approval_rate:
+                    type: number
+                    format: float
+                  avg_processing_time_hours:
+                    type: number
+                    format: float
+                  bottleneck_count:
+                    type: integer
+
+  /analytics/workflows/{id}:
+    get:
+      tags: [Analytics]
+      summary: Get workflow metrics
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: start_date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowMetric'
+
+  /analytics/bottlenecks:
+    get:
+      tags: [Analytics]
+      summary: Detect workflow bottlenecks
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ApprovalBottleneck'
+
+# ==================== COMPONENTS ====================
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    WorkflowId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+      description: Workflow ID
+    
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        default: 1
+      description: Page number
+    
+    PerPage:
+      name: per_page
+      in: query
+      schema:
+        type: integer
+        default: 15
+      description: Items per page
+
+  responses:
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "Resource not found"
+    
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "The given data was invalid."
+              errors:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    type: string
+
+  schemas:
+    Workflow:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        model_type:
+          type: string
+        description:
+          type: string
+        is_active:
+          type: boolean
+        auto_start:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        steps:
+          type: array
+          items:
+            $ref: '#/components/schemas/ApprovalStep'
+    
+    ApprovalStep:
+      type: object
+      properties:
+        id:
+          type: integer
+        workflow_id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        sequence:
+          type: integer
+        approval_type:
+          type: string
+          enum: [serial, parallel, any_one]
+        sla_hours:
+          type: integer
+        can_edit:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        approvers:
+          type: array
+          items:
+            $ref: '#/components/schemas/Approver'
+    
+    Approver:
+      type: object
+      properties:
+        id:
+          type: integer
+        approval_step_id:
+          type: integer
+        approver_type:
+          type: string
+          enum: [user, role, department]
+        approver_id:
+          oneOf:
+            - type: integer
+            - type: string
+    
+    ApprovalRequest:
+      type: object
+      properties:
+        id:
+          type: integer
+        workflow_id:
+          type: integer
+        requestable_type:
+          type: string
+        requestable_id:
+          type: integer
+        requested_by_user_id:
+          type: integer
+        current_step_id:
+          type: integer
+        status:
+          type: string
+          enum: [draft, submitted, in_progress, approved, rejected, sent_back, held, cancelled]
+        priority:
+          type: string
+          enum: [low, normal, high, urgent]
+        data:
+          type: object
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        workflow:
+          $ref: '#/components/schemas/Workflow'
+        current_step:
+          $ref: '#/components/schemas/ApprovalStep'
+    
+    ApprovalAction:
+      type: object
+      properties:
+        id:
+          type: integer
+        approval_request_id:
+          type: integer
+        approval_step_id:
+          type: integer
+        user_id:
+          type: integer
+        action_type:
+          type: string
+          enum: [submitted, approved, rejected, sent_back, held, cancelled, resubmitted]
+        comments:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        user:
+          type: object
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+            email:
+              type: string
+    
+    ApprovalChangeLog:
+      type: object
+      properties:
+        id:
+          type: integer
+        approval_request_id:
+          type: integer
+        user_id:
+          type: integer
+        field_name:
+          type: string
+        old_value:
+          type: string
+        new_value:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    
+    ApprovalAttachment:
+      type: object
+      properties:
+        id:
+          type: integer
+        approval_request_id:
+          type: integer
+        file_name:
+          type: string
+        file_path:
+          type: string
+        file_size:
+          type: integer
+        mime_type:
+          type: string
+        type:
+          type: string
+        uploaded_by_user_id:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+    
+    WorkflowMetric:
+      type: object
+      properties:
+        workflow_id:
+          type: integer
+        date:
+          type: string
+          format: date
+        total_requests:
+          type: integer
+        approved_count:
+          type: integer
+        rejected_count:
+          type: integer
+        avg_processing_time_hours:
+          type: number
+          format: float
+        approval_rate:
+          type: number
+          format: float
+    
+    ApprovalBottleneck:
+      type: object
+      properties:
+        id:
+          type: integer
+        workflow_id:
+          type: integer
+        step_id:
+          type: integer
+        pending_count:
+          type: integer
+        avg_wait_time_hours:
+          type: number
+          format: float
+        severity:
+          type: string
+          enum: [low, medium, high, critical]
+        recommendation:
+          type: string
+        detected_at:
+          type: string
+          format: date-time
+    
+    PaginationMeta:
+      type: object
+      properties:
+        current_page:
+          type: integer
+        last_page:
+          type: integer
+        per_page:
+          type: integer
+        total:
+          type: integer
+        from:
+          type: integer
+        to:
+          type: integer

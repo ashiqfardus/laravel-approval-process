@@ -50,8 +50,19 @@ class ApprovalProcessServiceProvider extends ServiceProvider
             __DIR__ . '/../resources/assets' => public_path('vendor/approval-process'),
         ], 'approval-process-assets');
 
-        // Load routes
+        // Load API routes (always)
         $this->loadRoutesFrom(__DIR__ . '/../routes/api.php');
+
+        // Load UI routes and views (only if enabled)
+        if (config('approval-process.ui.enabled', true)) {
+            $this->loadViewsFrom(__DIR__ . '/../resources/views', 'approval-process');
+            $this->loadRoutesFrom(__DIR__ . '/../routes/web.php');
+        }
+
+        // Load broadcast channels (only if real-time is enabled)
+        if (config('approval-process.features.enable_real_time_updates', false)) {
+            $this->loadRoutesFrom(__DIR__ . '/../routes/channels.php');
+        }
 
         // Load migrations
         $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');

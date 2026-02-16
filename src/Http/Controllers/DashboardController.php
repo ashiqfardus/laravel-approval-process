@@ -4,15 +4,18 @@ namespace AshiqFardus\ApprovalProcess\Http\Controllers;
 
 use AshiqFardus\ApprovalProcess\Models\ApprovalRequest;
 use AshiqFardus\ApprovalProcess\Services\ApprovalEngine;
+use AshiqFardus\ApprovalProcess\Services\AnalyticsService;
 use Illuminate\Http\JsonResponse;
 
 class DashboardController extends Controller
 {
     protected ApprovalEngine $engine;
+    protected AnalyticsService $analytics;
 
-    public function __construct(ApprovalEngine $engine)
+    public function __construct(ApprovalEngine $engine, AnalyticsService $analytics)
     {
         $this->engine = $engine;
+        $this->analytics = $analytics;
     }
 
     /**
@@ -20,7 +23,8 @@ class DashboardController extends Controller
      */
     public function stats(): JsonResponse
     {
-        $stats = $this->engine->getDashboardStats(auth()->id());
+        $workflowId = request()->input('workflow_id');
+        $stats = $this->analytics->getDashboardStats($workflowId);
 
         return response()->json($stats);
     }
