@@ -16,6 +16,13 @@ Route::prefix(config('approval-process.paths.api_prefix'))
         Route::post('workflows/{workflow}/clone', [WorkflowController::class, 'clone']);
         Route::patch('workflows/{workflow}/enable', [WorkflowController::class, 'enable']);
         Route::patch('workflows/{workflow}/disable', [WorkflowController::class, 'disable']);
+        
+        // Workflow step management routes
+        Route::get('workflows/{workflow}/steps', [WorkflowController::class, 'steps']);
+        Route::post('workflows/{workflow}/steps', [WorkflowController::class, 'addStep'])->where('workflow', '[0-9]+');
+        Route::put('workflows/{workflow}/steps/{step}', [WorkflowController::class, 'updateStep']);
+        Route::delete('workflows/{workflow}/steps/{step}', [WorkflowController::class, 'removeStep']);
+        Route::post('workflows/{workflow}/steps/reorder', [WorkflowController::class, 'reorderSteps']);
 
         // Approval request routes
         Route::apiResource('requests', ApprovalRequestController::class);
@@ -26,6 +33,8 @@ Route::prefix(config('approval-process.paths.api_prefix'))
         Route::post('requests/{request}/hold', [ApprovalRequestController::class, 'hold']);
         Route::post('requests/{request}/cancel', [ApprovalRequestController::class, 'cancel']);
         Route::post('requests/{request}/resubmit', [ApprovalRequestController::class, 'resubmit']);
+        Route::post('requests/{request}/edit-and-resubmit', [ApprovalRequestController::class, 'editAndResubmit']);
+        Route::get('requests/{request}/change-history', [ApprovalRequestController::class, 'changeHistory']);
 
         // Approval action routes
         Route::get('requests/{request}/actions', [ApprovalActionController::class, 'index']);

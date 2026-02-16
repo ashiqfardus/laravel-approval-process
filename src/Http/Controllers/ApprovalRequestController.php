@@ -5,15 +5,25 @@ namespace AshiqFardus\ApprovalProcess\Http\Controllers;
 use AshiqFardus\ApprovalProcess\Models\ApprovalRequest;
 use AshiqFardus\ApprovalProcess\Http\Requests\ApprovalRequestRequest;
 use AshiqFardus\ApprovalProcess\Services\ApprovalEngine;
+use AshiqFardus\ApprovalProcess\Services\ChangeTrackingService;
+use AshiqFardus\ApprovalProcess\Services\ChangeHistoryFormatter;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Database\Eloquent\Model;
 
 class ApprovalRequestController extends Controller
 {
     protected ApprovalEngine $engine;
+    protected ChangeTrackingService $changeTracking;
+    protected ChangeHistoryFormatter $formatter;
 
-    public function __construct(ApprovalEngine $engine)
-    {
+    public function __construct(
+        ApprovalEngine $engine,
+        ChangeTrackingService $changeTracking,
+        ChangeHistoryFormatter $formatter
+    ) {
         $this->engine = $engine;
+        $this->changeTracking = $changeTracking;
+        $this->formatter = $formatter;
     }
 
     /**
@@ -56,7 +66,17 @@ class ApprovalRequestController extends Controller
             return response()->json(['message' => 'Request cannot be edited'], 422);
         }
 
+        $oldSnapshot = $approvalRequest->data_snapshot ?? [];
         $approvalRequest->update($request->validated());
+        $newSnapshot = $approvalRequest->fresh()->data_snapshot ?? [];
+
+        // Track changes
+        $this->changeTracking->trackChanges(
+            $approvalRequest,
+            $oldSnapshot,
+            $newSnapshot,
+            auth()->id()
+        );
 
         return response()->json($approvalRequest);
     }
@@ -155,13 +175,136 @@ class ApprovalRequestController extends Controller
             return response()->json(['message' => 'Only rejected requests can be resubmitted'], 422);
         }
 
-        $approvalRequest->update([
-            'status' => ApprovalRequest::STATUS_SUBMITTED,
-            'rejected_at' => null,
-            'rejection_reason' => null,
-        ]);
+        $approvalRequest->resubmit();
 
         return response()->json($approvalRequest);
+    }
+
+    /**
+     * Edit and resubmit the request with updated data.
+     * Works for both model-based (updates the requestable model) and query-based approvals
+     * (updates data_snapshot and QueryApprovalRequest.result_snapshot).
+     */
+    public function editAndResubmit(ApprovalRequest $approvalRequest): JsonResponse
+    {
+        if (!$approvalRequest->canEdit()) {
+            return response()->json([
+                'message' => 'Request cannot be edited. Only draft or rejected requests can be edited.'
+            ], 422);
+        }
+
+        $request = request();
+        $updatedData = $request->input('data_snapshot', []);
+        $remarks = $request->input('remarks', 'Document edited and resubmitted');
+
+        // Get the requestable model if it exists
+        $requestable = $approvalRequest->requestable;
+        $oldSnapshot = $approvalRequest->data_snapshot ?? [];
+
+        if ($requestable instanceof Model) {
+            // Create a temporary model instance with old data for comparison
+            $oldModel = clone $requestable;
+            foreach ($oldSnapshot as $key => $value) {
+                if (array_key_exists($key, $oldModel->getAttributes())) {
+                    $oldModel->setAttribute($key, $value);
+                }
+            }
+
+            // Update the actual model
+            $requestable->fill($updatedData);
+            $requestable->save();
+
+            // Track changes
+            $this->changeTracking->trackModelChanges(
+                $approvalRequest,
+                $oldModel,
+                $requestable,
+                auth()->id()
+            );
+
+            // Use engine's editAndResubmit method
+            $approvalRequest = $this->engine->editAndResubmit(
+                $approvalRequest,
+                $requestable,
+                auth()->id(),
+                $remarks
+            );
+        } else {
+            // For query-based or non-model requests: update snapshot and keep QueryApprovalRequest in sync
+            // Track changes
+            $this->changeTracking->trackChanges(
+                $approvalRequest,
+                $oldSnapshot,
+                $updatedData,
+                auth()->id()
+            );
+
+            // Update and resubmit
+            $approvalRequest->update([
+                'data_snapshot' => $updatedData,
+                'status' => ApprovalRequest::STATUS_SUBMITTED,
+                'rejected_at' => null,
+                'rejection_reason' => null,
+            ]);
+
+            // Keep query-based approval snapshot in sync (result_snapshot = submitted result data)
+            $queryApproval = $approvalRequest->queryApproval;
+            if ($queryApproval) {
+                $resultSnapshot = isset($updatedData['data']) ? $updatedData['data'] : $updatedData;
+                $queryApproval->update(['result_snapshot' => $resultSnapshot]);
+            }
+
+            // Reset to first step
+            $firstStep = $approvalRequest->workflow->activeSteps()->first();
+            if ($firstStep) {
+                $approvalRequest->update(['current_step_id' => $firstStep->id]);
+            }
+        }
+
+        return response()->json($approvalRequest->fresh());
+    }
+
+    /**
+     * Get change history for the request.
+     */
+    public function changeHistory(ApprovalRequest $approvalRequest): JsonResponse
+    {
+        $format = request()->input('format', 'json'); // 'json', 'text', 'html'
+        $groupBy = request()->input('group_by'); // 'date', 'user', 'field', null
+
+        if ($format === 'text') {
+            $history = $this->formatter->formatRequestHistory($approvalRequest, [
+                'group_by' => $groupBy
+            ]);
+            return response()->json(['history' => $history], 200, [], JSON_UNESCAPED_UNICODE);
+        }
+
+        if ($format === 'html') {
+            $history = $this->formatter->formatAsHtml($approvalRequest);
+            return response()->json(['history' => $history], 200, [], JSON_UNESCAPED_UNICODE);
+        }
+
+        // JSON format (default)
+        $changes = \AshiqFardus\ApprovalProcess\Models\ApprovalChangeLog::getChangesForRequest($approvalRequest);
+        $summary = $this->changeTracking->getChangeSummary($approvalRequest);
+
+        return response()->json([
+            'summary' => $summary,
+            'changes' => $changes->map(function ($change) {
+                return [
+                    'id' => $change->id,
+                    'field_name' => $change->field_name,
+                    'old_value' => $change->old_value,
+                    'new_value' => $change->new_value,
+                    'user' => $change->user ? [
+                        'id' => $change->user->id,
+                        'name' => $change->user->name,
+                    ] : null,
+                    'formatted' => $this->formatter->formatChange($change),
+                    'created_at' => $change->created_at->toIso8601String(),
+                ];
+            }),
+        ]);
     }
 
     /**

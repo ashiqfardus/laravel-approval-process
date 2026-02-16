@@ -22,9 +22,19 @@ class ApprovalEngine
     {
         $modelClass = get_class($model);
 
-        $workflow = Workflow::where('model_type', $modelClass)
-            ->where('is_active', true)
-            ->first();
+        // Support query-based workflows (e.g., 'query:sql', 'query:view')
+        if (isset($metadata['query_based']) && $metadata['query_based']) {
+            $queryType = $model->type ?? 'unknown';
+            $workflowType = "query:{$queryType}";
+            
+            $workflow = Workflow::where('model_type', $workflowType)
+                ->where('is_active', true)
+                ->first();
+        } else {
+            $workflow = Workflow::where('model_type', $modelClass)
+                ->where('is_active', true)
+                ->first();
+        }
 
         if (!$workflow) {
             throw new \Exception("No active workflow found for {$modelClass}");

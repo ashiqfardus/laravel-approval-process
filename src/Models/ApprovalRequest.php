@@ -5,6 +5,7 @@ namespace AshiqFardus\ApprovalProcess\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class ApprovalRequest extends Model
@@ -98,6 +99,14 @@ class ApprovalRequest extends Model
     public function notifications(): HasMany
     {
         return $this->hasMany(ApprovalNotification::class);
+    }
+
+    /**
+     * Get the query approval request (for query-based approvals).
+     */
+    public function queryApproval(): HasOne
+    {
+        return $this->hasOne(QueryApprovalRequest::class);
     }
 
     /**

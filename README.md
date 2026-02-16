@@ -1,6 +1,6 @@
 # Laravel Approval Process Package
 
-**Author**: Ashiq Fardus | **Email**: ashiqfardus@hotmail.com  
+**Author**: Ashiq Fardus | **Email**: <ashiqfardus@hotmail.com>  
 **Package**: ashiqfardus/laravel-approval-process  
 **Laravel**: 10, 11, 12 | **PHP**: 8.1+
 
@@ -23,6 +23,7 @@ php artisan migrate
 ## 🎯 Quick Start
 
 ### 1. Make Model Approvable
+
 ```php
 use AshiqFardus\ApprovalProcess\Traits\Approvable;
 
@@ -30,6 +31,7 @@ class Offer extends Model { use Approvable; }
 ```
 
 ### 2. Create Workflow
+
 ```php
 $workflow = Workflow::create(['name' => 'Offer', 'model_type' => Offer::class]);
 $step = ApprovalStep::create(['workflow_id' => 1, 'name' => 'Manager', 'sequence' => 1]);
@@ -37,12 +39,14 @@ Approver::create(['approval_step_id' => 1, 'approver_type' => 'role', 'approver_
 ```
 
 ### 3. Submit
+
 ```php
 $offer = Offer::create([...]); 
 $approval = $offer->submitForApproval(auth()->id());
 ```
 
 ### 4. Approve/Reject
+
 ```php
 $engine = app(ApprovalEngine::class);
 $engine->approve($approval, auth()->id());
@@ -101,17 +105,45 @@ Delegation::create([
 
 ---
 
+## 🔮 Query-Based Approvals (New!)
+
+Support for Database Views, Raw SQL, and Legacy Systems.
+
+**1. Create Workflow**
+
+```php
+Workflow::create(['name' => 'Sales Report', 'model_type' => 'query:view']);
+```
+
+**2. Submit View or SQL**
+
+```php
+$service = app(QueryApprovalService::class);
+
+// Database View
+$service->submitViewApproval('sales_view', ['month' => 'Oct'], auth()->id());
+
+// Raw SQL
+$service->submitSqlApproval("SELECT * FROM legacy_table WHERE id = ?", [1], auth()->id());
+```
+
+**Edit & resubmit / change history**: The same API works for query-based requests. Use `POST .../requests/{id}/edit-and-resubmit` with `data_snapshot` (full payload or `{ "data": resultArray }` for query-based). Use `GET .../requests/{id}/change-history` for change history. Approve/reject/send-back use the same endpoints.
+
+---
+
 ## 🎯 3-Level Offer Approval Example
 
 **Flow**: Manager → Finance → Director
 
 **Visibility**:
+
 - **Draft**: Creator only
 - **Pending**: Creator + Current Approver + Previous Approvers  
 - **Rejected**: Creator + Who Rejected
 - **Approved**: Everyone
 
 **Creator Messages**:
+
 - Draft: "Edit and submit"
 - Manager: "Waiting for Manager approval"
 - Rejected: "Rejected. Fix and resubmit"
@@ -124,6 +156,7 @@ Delegation::create([
 ## 🔧 Configuration
 
 `config/approval-process.php`:
+
 ```php
 [
     'database' => ['prefix' => 'approval_'],
@@ -150,8 +183,8 @@ MIT License
 ---
 
 **Author**: Ashiq Fardus  
-**Email**: ashiqfardus@hotmail.com
+**Email**: <ashiqfardus@hotmail.com>
 
 ---
 
-**See OFFER_MODULE_SCENARIO.md and OFFER_VISIBILITY_DIAGRAMS.md for detailed examples.**
+**See OFFER_MODULE_SCENARIO.md, OFFER_VISIBILITY_DIAGRAMS.md, and QUERY_BASED_APPROVAL_EXAMPLES.md for detailed examples.**

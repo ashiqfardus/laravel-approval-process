@@ -42,7 +42,28 @@ abstract class TestCase extends Orchestra
         ]);
 
         // Setup approval process config
-        $app['config']->set('approval-process.paths.api_prefix', 'api/approval');
+        $app['config']->set('approval-process.paths.api_prefix', 'api/approval-process');
+        
+        // Setup auth guards for testing - use a custom guard that always passes
+        $app['config']->set('auth.guards.api', [
+            'driver' => 'session',
+            'provider' => 'users',
+        ]);
+        
+        $app['config']->set('auth.providers.users', [
+            'driver' => 'eloquent',
+            'model' => \Illuminate\Foundation\Auth\User::class,
+        ]);
+        
+        // Register a custom auth guard for testing that always authenticates
+        $app['auth']->extend('test', function ($app, $name, $config) {
+            return new class($app['auth']->createUserProvider($config['provider'] ?? null)) extends \Illuminate\Auth\SessionGuard {
+                public function check() { return true; }
+                public function guest() { return false; }
+                public function user() { return \App\Models\User::first() ?? new \Illuminate\Foundation\Auth\User(); }
+                public function id() { return $this->user()?->id ?? 1; }
+            };
+        });
     }
 
     /**
@@ -50,14 +71,17 @@ abstract class TestCase extends Orchestra
      */
     protected function createUser(array $attributes = [])
     {
+        static $userCounter = 0;
+        $userCounter++;
+        
         $user = new class extends User {
             protected $table = 'users';
             protected $guarded = [];
         };
 
         return $user::create(array_merge([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+            'name' => 'Test User ' . $userCounter,
+            'email' => 'test' . $userCounter . '@example.com',
             'password' => bcrypt('password'),
         ], $attributes));
     }
