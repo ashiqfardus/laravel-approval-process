@@ -17,6 +17,10 @@ class ApprovalRequest extends Model
         'requestable_type',
         'requestable_id',
         'requested_by_user_id',
+        'creator_level',
+        'skip_previous_levels',
+        'sla_deadline',
+        'last_reminder_sent',
         'status',
         'data_snapshot',
         'submitted_at',
@@ -29,6 +33,9 @@ class ApprovalRequest extends Model
     protected $casts = [
         'data_snapshot' => 'json',
         'metadata' => 'json',
+        'skip_previous_levels' => 'boolean',
+        'sla_deadline' => 'datetime',
+        'last_reminder_sent' => 'datetime',
         'submitted_at' => 'datetime',
         'completed_at' => 'datetime',
         'rejected_at' => 'datetime',
@@ -75,6 +82,30 @@ class ApprovalRequest extends Model
     {
         return $this->hasMany(ApprovalAction::class, 'approval_request_id')
             ->orderByDesc('created_at');
+    }
+
+    /**
+     * Get the user who requested this approval.
+     */
+    public function requestedBy(): BelongsTo
+    {
+        return $this->belongsTo(config('approval-process.models.user', \App\Models\User::class), 'requested_by_user_id');
+    }
+
+    /**
+     * Get notifications for this request.
+     */
+    public function notifications(): HasMany
+    {
+        return $this->hasMany(ApprovalNotification::class);
+    }
+
+    /**
+     * Get escalations for this request.
+     */
+    public function escalations(): HasMany
+    {
+        return $this->hasMany(ApprovalEscalation::class);
     }
 
     /**
@@ -145,6 +176,70 @@ class ApprovalRequest extends Model
             self::STATUS_SUBMITTED,
             self::STATUS_IN_REVIEW,
             self::STATUS_PENDING,
+        ]);
+    }
+
+    /**
+     * Get creator's approval level.
+     */
+    public function getCreatorLevel(): ?int
+    {
+        return $this->creator_level;
+    }
+
+    /**
+     * Check if SLA deadline has passed.
+     */
+    public function isOverdue(): bool
+    {
+        return $this->sla_deadline && now()->isAfter($this->sla_deadline);
+    }
+
+    /**
+     * Get pending approvers for current step.
+     */
+    public function getPendingApprovers()
+    {
+        if (!$this->currentStep) {
+            return collect();
+        }
+
+        return $this->currentStep->approvers;
+    }
+
+    /**
+     * Calculate SLA deadline based on current step.
+     */
+    public function calculateSLADeadline()
+    {
+        if (!$this->currentStep || !$this->currentStep->sla_hours) {
+            return null;
+        }
+
+        return now()->addHours($this->currentStep->sla_hours);
+    }
+
+    /**
+     * Update SLA deadline.
+     */
+    public function updateSLADeadline(): void
+    {
+        $deadline = $this->calculateSLADeadline();
+        if ($deadline) {
+            $this->update(['sla_deadline' => $deadline]);
+        }
+    }
+
+    /**
+     * Resubmit the request after editing.
+     */
+    public function resubmit(): void
+    {
+        $this->update([
+            'status' => self::STATUS_SUBMITTED,
+            'submitted_at' => now(),
+            'rejected_at' => null,
+            'rejection_reason' => null,
         ]);
     }
 }

@@ -6,6 +6,13 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Database\Migrations\Migrator;
 use AshiqFardus\ApprovalProcess\Commands\PublishAssetsCommand;
 use AshiqFardus\ApprovalProcess\Commands\MakeMigrationCommand;
+use AshiqFardus\ApprovalProcess\Commands\CreateWorkflowCommand;
+use AshiqFardus\ApprovalProcess\Commands\ListWorkflowsCommand;
+use AshiqFardus\ApprovalProcess\Commands\CheckEscalationsCommand;
+use AshiqFardus\ApprovalProcess\Commands\SendRemindersCommand;
+use AshiqFardus\ApprovalProcess\Commands\EndDelegationsCommand;
+use AshiqFardus\ApprovalProcess\Services\ApprovalEngine;
+use AshiqFardus\ApprovalProcess\Services\ApproverResolver;
 
 class ApprovalProcessServiceProvider extends ServiceProvider
 {
@@ -54,6 +61,11 @@ class ApprovalProcessServiceProvider extends ServiceProvider
             $this->commands([
                 PublishAssetsCommand::class,
                 MakeMigrationCommand::class,
+                CreateWorkflowCommand::class,
+                ListWorkflowsCommand::class,
+                CheckEscalationsCommand::class,
+                SendRemindersCommand::class,
+                EndDelegationsCommand::class,
             ]);
         }
     }

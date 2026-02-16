@@ -46,12 +46,12 @@ return [
     ],
 
     'models' => [
-        'workflow' => \ApprovalWorkflow\ApprovalProcess\Models\Workflow::class,
-        'approval_step' => \ApprovalWorkflow\ApprovalProcess\Models\ApprovalStep::class,
-        'approval_request' => \ApprovalWorkflow\ApprovalProcess\Models\ApprovalRequest::class,
-        'approval_action' => \ApprovalWorkflow\ApprovalProcess\Models\ApprovalAction::class,
-        'approver' => \ApprovalWorkflow\ApprovalProcess\Models\Approver::class,
-        'delegation' => \ApprovalWorkflow\ApprovalProcess\Models\Delegation::class,
+        'workflow' => \AshiqFardus\ApprovalProcess\Models\Workflow::class,
+        'approval_step' => \AshiqFardus\ApprovalProcess\Models\ApprovalStep::class,
+        'approval_request' => \AshiqFardus\ApprovalProcess\Models\ApprovalRequest::class,
+        'approval_action' => \AshiqFardus\ApprovalProcess\Models\ApprovalAction::class,
+        'approver' => \AshiqFardus\ApprovalProcess\Models\Approver::class,
+        'delegation' => \AshiqFardus\ApprovalProcess\Models\Delegation::class,
     ],
 
     'features' => [

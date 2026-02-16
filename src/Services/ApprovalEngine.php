@@ -15,17 +15,19 @@ class ApprovalEngine
      */
     public function submitRequest(Model $model, int $userId, array $metadata = []): ApprovalRequest
     {
-        $workflow = Workflow::where('model_type', $model::class)
+        $modelClass = get_class($model);
+
+        $workflow = Workflow::where('model_type', $modelClass)
             ->where('is_active', true)
             ->first();
 
         if (!$workflow) {
-            throw new \Exception("No active workflow found for {$model::class}");
+            throw new \Exception("No active workflow found for {$modelClass}");
         }
 
         $request = ApprovalRequest::create([
             'workflow_id' => $workflow->id,
-            'requestable_type' => $model::class,
+            'requestable_type' => $modelClass,
             'requestable_id' => $model->id,
             'requested_by_user_id' => $userId,
             'status' => ApprovalRequest::STATUS_SUBMITTED,
@@ -177,21 +179,151 @@ class ApprovalEngine
     }
 
     /**
-     * Move request to next step.
+     * Move to next step in workflow.
      */
     protected function moveToNextStep(ApprovalRequest $request, ApprovalStep $currentStep): void
     {
         $nextStep = $currentStep->getNextStep();
+        $request->update(['current_step_id' => $nextStep?->id]);
+    }
 
-        if ($nextStep) {
-            $request->update(['current_step_id' => $nextStep->id]);
-        } else {
-            // All steps completed
+    /**
+     * Submit request with auto-approval for higher-level creators.
+     *
+     * @param Model $model
+     * @param int $userId
+     * @param array $metadata
+     * @return ApprovalRequest
+     */
+    public function createWithAutoApproval(Model $model, int $userId, array $metadata = []): ApprovalRequest
+    {
+        $modelClass = get_class($model);
+        $permissionService = app(ApprovalPermissionService::class);
+        
+        // Detect creator's level
+        $creatorLevel = $permissionService->getUserLevel($userId, $modelClass);
+        
+        // Create the request
+        $request = $this->submitRequest($model, $userId, $metadata);
+        
+        // If creator has approval level, auto-approve previous levels
+        if ($creatorLevel) {
             $request->update([
-                'status' => ApprovalRequest::STATUS_APPROVED,
-                'completed_at' => now(),
+                'creator_level' => $creatorLevel,
+                'skip_previous_levels' => true,
             ]);
+            
+            // Auto-approve all steps before creator's level
+            $this->autoApprovePreviousLevels($request, $creatorLevel, $userId);
         }
+        
+        return $request;
+    }
+
+    /**
+     * Auto-approve all levels before creator's level.
+     *
+     * @param ApprovalRequest $request
+     * @param int $creatorLevel
+     * @param int $userId
+     * @return void
+     */
+    protected function autoApprovePreviousLevels(ApprovalRequest $request, int $creatorLevel, int $userId): void
+    {
+        $workflow = $request->workflow;
+        $steps = $workflow->activeSteps()->where('sequence', '<', $creatorLevel)->get();
+        
+        foreach ($steps as $step) {
+            ApprovalAction::recordAction(
+                $request,
+                $step,
+                $userId,
+                ApprovalAction::ACTION_APPROVED,
+                'Auto-approved (creator is Level ' . $creatorLevel . ' approver)'
+            );
+        }
+        
+        // Set current step to creator's level
+        $creatorStep = $workflow->activeSteps()->where('sequence', $creatorLevel)->first();
+        if ($creatorStep) {
+            $request->update(['current_step_id' => $creatorStep->id]);
+        }
+    }
+
+    /**
+     * Edit and resubmit an approval request.
+     *
+     * @param ApprovalRequest $request
+     * @param Model $updatedModel
+     * @param int $userId
+     * @param string|null $remarks
+     * @return ApprovalRequest
+     */
+    public function editAndResubmit(
+        ApprovalRequest $request,
+        Model $updatedModel,
+        int $userId,
+        ?string $remarks = null
+    ): ApprovalRequest {
+        // Record the edit action
+        ApprovalAction::recordAction(
+            $request,
+            $request->currentStep,
+            $userId,
+            'edited',
+            $remarks ?? 'Document edited and resubmitted'
+        );
+        
+        // Update data snapshot
+        $request->update([
+            'data_snapshot' => $updatedModel->toArray(),
+            'status' => ApprovalRequest::STATUS_SUBMITTED,
+        ]);
+        
+        // Reset to first step
+        $firstStep = $request->workflow->activeSteps()->first();
+        if ($firstStep) {
+            $request->update(['current_step_id' => $firstStep->id]);
+        }
+        
+        return $request->fresh();
+    }
+
+    /**
+     * Calculate approval progress percentage.
+     *
+     * @param ApprovalRequest $request
+     * @return array
+     */
+    public function calculateApprovalProgress(ApprovalRequest $request): array
+    {
+        $workflow = $request->workflow;
+        $totalSteps = $workflow->activeSteps()->count();
+        
+        if ($totalSteps === 0) {
+            return [
+                'total_steps' => 0,
+                'completed_steps' => 0,
+                'progress_percentage' => 0,
+                'current_step_name' => null,
+            ];
+        }
+        
+        // Count approved steps
+        $approvedSteps = ApprovalAction::where('approval_request_id', $request->id)
+            ->where('action', ApprovalAction::ACTION_APPROVED)
+            ->distinct('approval_step_id')
+            ->count();
+        
+        $progressPercentage = round(($approvedSteps / $totalSteps) * 100, 2);
+        
+        return [
+            'total_steps' => $totalSteps,
+            'completed_steps' => $approvedSteps,
+            'progress_percentage' => $progressPercentage,
+            'current_step_name' => $request->currentStep?->name,
+            'current_step_sequence' => $request->currentStep?->sequence,
+        ];
     }
 
     /**

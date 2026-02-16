@@ -13,9 +13,7 @@ return new class extends Migration
             $table->foreignId('approval_step_id')->constrained('approval_steps')->cascadeOnDelete();
             $table->string('approver_type'); // user, role, manager, department_head, position, custom
             $table->string('approver_id')->nullable(); // Role name, position, custom class
-            $table->foreignId('user_id')->nullable()->constrained(
-                config('auth.providers.users.model') . 's'
-            );
+            $table->foreignId('user_id')->nullable()->constrained('users');
             $table->boolean('is_approved')->default(false);
             $table->timestamp('approval_at')->nullable();
             $table->unsignedInteger('sequence')->default(1);

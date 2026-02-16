@@ -10,12 +10,8 @@ return new class extends Migration
     {
         Schema::create('approval_delegations', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained(
-                config('auth.providers.users.model') . 's'
-            );
-            $table->foreignId('delegated_to_user_id')->constrained(
-                config('auth.providers.users.model') . 's'
-            );
+            $table->foreignId('user_id')->constrained('users');
+            $table->foreignId('delegated_to_user_id')->constrained('users');
             $table->foreignId('approval_step_id')->nullable()->constrained('approval_steps');
             $table->timestamp('starts_at');
             $table->timestamp('ends_at')->nullable();

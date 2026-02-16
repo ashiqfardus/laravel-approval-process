@@ -1,11 +1,12 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use ApprovalWorkflow\ApprovalProcess\Http\Controllers\WorkflowController;
-use ApprovalWorkflow\ApprovalProcess\Http\Controllers\ApprovalRequestController;
-use ApprovalWorkflow\ApprovalProcess\Http\Controllers\ApprovalActionController;
-use ApprovalWorkflow\ApprovalProcess\Http\Controllers\DelegationController;
-use ApprovalWorkflow\ApprovalProcess\Http\Controllers\DashboardController;
+use AshiqFardus\ApprovalProcess\Http\Controllers\WorkflowController;
+use AshiqFardus\ApprovalProcess\Http\Controllers\ApprovalRequestController;
+use AshiqFardus\ApprovalProcess\Http\Controllers\ApprovalActionController;
+use AshiqFardus\ApprovalProcess\Http\Controllers\DelegationController;
+use AshiqFardus\ApprovalProcess\Http\Controllers\DashboardController;
+use AshiqFardus\ApprovalProcess\Http\Controllers\NotificationController;
 
 Route::prefix(config('approval-process.paths.api_prefix'))
     ->middleware(['api', 'auth:api'])
@@ -34,6 +35,13 @@ Route::prefix(config('approval-process.paths.api_prefix'))
         Route::apiResource('delegations', DelegationController::class);
         Route::patch('delegations/{delegation}/activate', [DelegationController::class, 'activate']);
         Route::patch('delegations/{delegation}/deactivate', [DelegationController::class, 'deactivate']);
+
+        // Notification routes
+        Route::get('notifications', [NotificationController::class, 'index']);
+        Route::get('notifications/unread', [NotificationController::class, 'unread']);
+        Route::get('notifications/count', [NotificationController::class, 'count']);
+        Route::post('notifications/{id}/read', [NotificationController::class, 'markAsRead']);
+        Route::post('notifications/read-all', [NotificationController::class, 'markAllAsRead']);
 
         // Dashboard routes
         Route::get('dashboard/stats', [DashboardController::class, 'stats']);

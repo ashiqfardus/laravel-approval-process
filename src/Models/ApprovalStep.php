@@ -16,6 +16,9 @@ class ApprovalStep extends Model
         'description',
         'sequence',
         'approval_type',
+        'level_alias',
+        'allow_edit',
+        'allow_send_back',
         'is_active',
         'condition_config',
         'sla_hours',
@@ -27,6 +30,8 @@ class ApprovalStep extends Model
     protected $casts = [
         'condition_config' => 'json',
         'is_active' => 'boolean',
+        'allow_edit' => 'boolean',
+        'allow_send_back' => 'boolean',
         'allows_delegation' => 'boolean',
         'allows_partial_approval' => 'boolean',
     ];
@@ -120,5 +125,37 @@ class ApprovalStep extends Model
 
         // Implementation of condition evaluation logic
         return true;
+    }
+
+    /**
+     * Get level alias for printing.
+     */
+    public function getLevelAlias(): string
+    {
+        return $this->level_alias ?? $this->name;
+    }
+
+    /**
+     * Check if step allows editing before approval.
+     */
+    public function allowsEdit(): bool
+    {
+        return $this->allow_edit ?? false;
+    }
+
+    /**
+     * Check if step allows sending back.
+     */
+    public function allowsSendBack(): bool
+    {
+        return $this->allow_send_back ?? true;
+    }
+
+    /**
+     * Get SLA hours for this step.
+     */
+    public function getSLAHours(): ?int
+    {
+        return $this->sla_hours;
     }
 }

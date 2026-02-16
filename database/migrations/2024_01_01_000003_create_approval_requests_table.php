@@ -14,9 +14,11 @@ return new class extends Migration
             $table->foreignId('current_step_id')->nullable()->constrained('approval_steps');
             $table->string('requestable_type');
             $table->unsignedBigInteger('requestable_id');
-            $table->foreignId('requested_by_user_id')->constrained(
-                config('auth.providers.users.model') . 's'
-            );
+            $table->foreignId('requested_by_user_id')->constrained('users');
+            $table->unsignedBigInteger('creator_level')->nullable()->comment('Approval level of the creator');
+            $table->boolean('skip_previous_levels')->default(false)->comment('Auto-approve previous levels');
+            $table->timestamp('sla_deadline')->nullable()->comment('SLA deadline for current step');
+            $table->timestamp('last_reminder_sent')->nullable()->comment('Last reminder sent timestamp');
             $table->enum('status', [
                 'draft',
                 'submitted',

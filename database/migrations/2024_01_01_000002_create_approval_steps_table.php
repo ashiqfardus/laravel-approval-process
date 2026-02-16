@@ -15,6 +15,9 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->unsignedInteger('sequence');
             $table->enum('approval_type', ['serial', 'parallel', 'any-one'])->default('serial');
+            $table->string('level_alias')->nullable()->comment('Display name for printing (e.g., "Prepared By", "Checked By")');
+            $table->boolean('allow_edit')->default(false)->comment('Allow approver to edit before approving');
+            $table->boolean('allow_send_back')->default(true)->comment('Allow approver to send back');
             $table->boolean('is_active')->default(true);
             $table->json('condition_config')->nullable();
             $table->unsignedInteger('sla_hours')->nullable();

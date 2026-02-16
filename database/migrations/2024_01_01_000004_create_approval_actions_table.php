@@ -12,9 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('approval_request_id')->constrained('approval_requests')->cascadeOnDelete();
             $table->foreignId('approval_step_id')->constrained('approval_steps');
-            $table->foreignId('user_id')->constrained(
-                config('auth.providers.users.model') . 's'
-            );
+            $table->foreignId('user_id')->constrained('users');
             $table->string('action');
             $table->text('remarks')->nullable();
             $table->json('attachments')->nullable();

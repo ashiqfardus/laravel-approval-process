@@ -17,4 +17,7 @@ coverage/
 *.md
 !README.md
 !INSTALLATION.md
+!FEATURES.md
+!PROGRESS.md
+!TODO.md
 
