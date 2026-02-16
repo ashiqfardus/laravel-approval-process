@@ -26,15 +26,15 @@ Route::prefix(config('approval-process.paths.api_prefix'))
 
         // Approval request routes
         Route::apiResource('requests', ApprovalRequestController::class);
-        Route::post('requests/{request}/submit', [ApprovalRequestController::class, 'submit']);
-        Route::post('requests/{request}/approve', [ApprovalRequestController::class, 'approve']);
-        Route::post('requests/{request}/reject', [ApprovalRequestController::class, 'reject']);
-        Route::post('requests/{request}/send-back', [ApprovalRequestController::class, 'sendBack']);
-        Route::post('requests/{request}/hold', [ApprovalRequestController::class, 'hold']);
-        Route::post('requests/{request}/cancel', [ApprovalRequestController::class, 'cancel']);
-        Route::post('requests/{request}/resubmit', [ApprovalRequestController::class, 'resubmit']);
-        Route::post('requests/{request}/edit-and-resubmit', [ApprovalRequestController::class, 'editAndResubmit']);
-        Route::get('requests/{request}/change-history', [ApprovalRequestController::class, 'changeHistory']);
+        Route::post('requests/{approval_request}/submit', [ApprovalRequestController::class, 'submit']);
+        Route::post('requests/{approval_request}/approve', [ApprovalRequestController::class, 'approve']);
+        Route::post('requests/{approval_request}/reject', [ApprovalRequestController::class, 'reject']);
+        Route::post('requests/{approval_request}/send-back', [ApprovalRequestController::class, 'sendBack']);
+        Route::post('requests/{approval_request}/hold', [ApprovalRequestController::class, 'hold']);
+        Route::post('requests/{approval_request}/cancel', [ApprovalRequestController::class, 'cancel']);
+        Route::post('requests/{approval_request}/resubmit', [ApprovalRequestController::class, 'resubmit']);
+        Route::post('requests/{approval_request}/edit-and-resubmit', [ApprovalRequestController::class, 'editAndResubmit']);
+        Route::get('requests/{approval_request}/change-history', [ApprovalRequestController::class, 'changeHistory']);
 
         // Approval action routes
         Route::get('requests/{request}/actions', [ApprovalActionController::class, 'index']);

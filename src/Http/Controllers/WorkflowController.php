@@ -95,8 +95,10 @@ class WorkflowController extends Controller
     /**
      * Get all steps for a workflow.
      */
-    public function steps(Workflow $workflow): JsonResponse
+    public function steps($workflow_id): JsonResponse
     {
+        $workflow = Workflow::findOrFail($workflow_id);
+        
         $steps = $workflow->steps()
             ->with('approvers')
             ->orderBy('sequence')
@@ -160,8 +162,11 @@ class WorkflowController extends Controller
     /**
      * Update a step in the workflow.
      */
-    public function updateStep(Workflow $workflow, ApprovalStep $step): JsonResponse
+    public function updateStep($workflow_id, $step_id): JsonResponse
     {
+        $workflow = Workflow::findOrFail($workflow_id);
+        $step = ApprovalStep::findOrFail($step_id);
+        
         // Verify step belongs to workflow
         if ($step->workflow_id !== $workflow->id) {
             return response()->json(['message' => 'Step does not belong to this workflow'], 422);
@@ -198,8 +203,11 @@ class WorkflowController extends Controller
     /**
      * Remove a step from the workflow.
      */
-    public function removeStep(Workflow $workflow, ApprovalStep $step): JsonResponse
+    public function removeStep($workflow_id, $step_id): JsonResponse
     {
+        $workflow = Workflow::findOrFail($workflow_id);
+        $step = ApprovalStep::findOrFail($step_id);
+        
         // Verify step belongs to workflow
         if ($step->workflow_id !== $workflow->id) {
             return response()->json(['message' => 'Step does not belong to this workflow'], 422);
@@ -235,8 +243,10 @@ class WorkflowController extends Controller
     /**
      * Reorder steps in the workflow.
      */
-    public function reorderSteps(Workflow $workflow): JsonResponse
+    public function reorderSteps($workflow_id): JsonResponse
     {
+        $workflow = Workflow::findOrFail($workflow_id);
+        
         $request = request();
         $stepIds = $request->input('step_ids', []);
 
@@ -251,6 +261,14 @@ class WorkflowController extends Controller
         }
 
         DB::transaction(function () use ($workflow, $stepIds) {
+            // First, set all sequences to negative values to avoid unique constraint violations
+            foreach ($stepIds as $index => $stepId) {
+                ApprovalStep::where('id', $stepId)
+                    ->where('workflow_id', $workflow->id)
+                    ->update(['sequence' => -($index + 1)]);
+            }
+            
+            // Then, set them to positive values
             foreach ($stepIds as $index => $stepId) {
                 ApprovalStep::where('id', $stepId)
                     ->where('workflow_id', $workflow->id)
@@ -277,6 +295,9 @@ class WorkflowController extends Controller
         }
 
         DB::transaction(function () use ($workflow, $step, $oldSequence, $newSequence) {
+            // Set the moving step to a temporary negative value to avoid conflicts
+            $step->update(['sequence' => -1]);
+            
             if ($newSequence > $oldSequence) {
                 // Moving down: shift steps up
                 $workflow->steps()
@@ -291,6 +312,7 @@ class WorkflowController extends Controller
                     ->increment('sequence');
             }
 
+            // Set the final sequence
             $step->update(['sequence' => $newSequence]);
         });
     }
