@@ -23,8 +23,10 @@ class EscalationServiceTest extends TestCase
     {
         parent::setUp();
         
-        $this->service = new EscalationService();
+        $this->service = app(EscalationService::class);
         $this->user = $this->createUser();
+        $approver1 = $this->createUser(['email' => 'approver1@example.com']);
+        $approver2 = $this->createUser(['email' => 'approver2@example.com']);
         
         // Create workflow with SLA
         $this->workflow = Workflow::create([
@@ -47,6 +49,19 @@ class EscalationServiceTest extends TestCase
             'sequence' => 2,
             'approval_type' => 'serial',
             'sla_hours' => 48,
+        ]);
+        
+        // Add approvers to steps for escalation to work
+        \AshiqFardus\ApprovalProcess\Models\ApprovalApprover::create([
+            'approval_step_id' => $step1->id,
+            'user_id' => $approver1->id,
+            'approver_type' => 'user',
+        ]);
+        
+        \AshiqFardus\ApprovalProcess\Models\ApprovalApprover::create([
+            'approval_step_id' => $step2->id,
+            'user_id' => $approver2->id,
+            'approver_type' => 'user',
         ]);
         
         $this->request = ApprovalRequest::create([

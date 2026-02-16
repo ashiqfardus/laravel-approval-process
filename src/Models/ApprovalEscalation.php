@@ -4,6 +4,7 @@ namespace AshiqFardus\ApprovalProcess\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Foundation\Auth\User;
 
 class ApprovalEscalation extends Model
 {
@@ -30,7 +31,7 @@ class ApprovalEscalation extends Model
      */
     public function fromUser(): BelongsTo
     {
-        return $this->belongsTo(config('approval-process.user_model', \App\Models\User::class), 'from_user_id');
+        return $this->belongsTo(config('auth.providers.users.model', User::class), 'from_user_id');
     }
 
     /**
@@ -38,7 +39,7 @@ class ApprovalEscalation extends Model
      */
     public function toUser(): BelongsTo
     {
-        return $this->belongsTo(config('approval-process.user_model', \App\Models\User::class), 'to_user_id');
+        return $this->belongsTo(config('auth.providers.users.model', User::class), 'to_user_id');
     }
 
     /**

@@ -2,7 +2,7 @@
 
 namespace AshiqFardus\ApprovalProcess\Services;
 
-use AshiqFardus\ApprovalProcess\Models\Approver;
+use AshiqFardus\ApprovalProcess\Models\ApprovalApprover;
 use AshiqFardus\ApprovalProcess\Models\ApprovalDelegation;
 use Illuminate\Support\Collection;
 
@@ -20,11 +20,11 @@ class ApprovalPermissionService
         // Check for active delegation first
         $effectiveUserId = $this->getEffectiveApprover($userId, $module);
 
-        return Approver::whereHas('step.workflow', function ($q) use ($module) {
+        return ApprovalApprover::whereHas('approvalStep.workflow', function ($q) use ($module) {
                 $q->where('model_type', $module);
             })
             ->where('user_id', $effectiveUserId)
-            ->join('approval_steps', 'approvers.approval_step_id', '=', 'approval_steps.id')
+            ->join('approval_steps', 'approval_approvers.approval_step_id', '=', 'approval_steps.id')
             ->min('approval_steps.sequence');
     }
 
@@ -66,10 +66,13 @@ class ApprovalPermissionService
      */
     public function getEffectiveApprover(int $userId, ?string $module = null): int
     {
-        $delegation = ApprovalDelegation::where('delegator_id', $userId)
+        $delegation = ApprovalDelegation::where('user_id', $userId)
             ->where('is_active', true)
-            ->where('start_date', '<=', now())
-            ->where('end_date', '>=', now())
+            ->where('starts_at', '<=', now())
+            ->where(function ($query) {
+                $query->whereNull('ends_at')
+                    ->orWhere('ends_at', '>=', now());
+            })
             ->when($module, function ($q) use ($module) {
                 $q->where(function ($query) use ($module) {
                     $query->where('module_type', $module)
@@ -78,7 +81,7 @@ class ApprovalPermissionService
             })
             ->first();
 
-        return $delegation ? $delegation->delegate_id : $userId;
+        return $delegation ? $delegation->delegated_to_user_id : $userId;
     }
 
     /**
@@ -90,7 +93,7 @@ class ApprovalPermissionService
      */
     public function isApprover(int $userId, string $module): bool
     {
-        return Approver::whereHas('step.workflow', function ($q) use ($module) {
+        return ApprovalApprover::whereHas('approvalStep.workflow', function ($q) use ($module) {
                 $q->where('model_type', $module);
             })
             ->where('user_id', $userId)
@@ -106,10 +109,10 @@ class ApprovalPermissionService
      */
     public function getApproversAtLevel(string $module, int $level): Collection
     {
-        return Approver::whereHas('step.workflow', function ($q) use ($module) {
+        return ApprovalApprover::whereHas('approvalStep.workflow', function ($q) use ($module) {
                 $q->where('model_type', $module);
             })
-            ->whereHas('step', function ($q) use ($level) {
+            ->whereHas('approvalStep', function ($q) use ($level) {
                 $q->where('sequence', $level);
             })
             ->with('user')

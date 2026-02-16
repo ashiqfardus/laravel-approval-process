@@ -9,36 +9,38 @@ class DelegationService
 {
     /**
      * Create a new delegation.
-     *
-     * @param array $data
-     * @return ApprovalDelegation
      */
     public function createDelegation(array $data): ApprovalDelegation
     {
-        return ApprovalDelegation::create([
-            'delegator_id' => $data['delegator_id'],
-            'delegate_id' => $data['delegate_id'],
+        // Map common field names to database column names for flexibility
+        $mapped = [
+            'user_id' => $data['delegator_id'] ?? $data['user_id'] ?? null,
+            'delegated_to_user_id' => $data['delegate_id'] ?? $data['delegated_to_user_id'] ?? null,
+            'approval_step_id' => $data['approval_step_id'] ?? null,
             'module_type' => $data['module_type'] ?? null,
-            'start_date' => $data['start_date'],
-            'end_date' => $data['end_date'],
+            'role_type' => $data['role_type'] ?? null,
+            'starts_at' => $data['start_date'] ?? $data['starts_at'] ?? now(),
+            'ends_at' => $data['end_date'] ?? $data['ends_at'] ?? null,
+            'delegation_type' => $data['delegation_type'] ?? 'temporary',
             'reason' => $data['reason'] ?? null,
-            'is_active' => true,
-        ]);
+            'is_active' => $data['is_active'] ?? true,
+        ];
+        
+        return ApprovalDelegation::create($mapped);
     }
 
     /**
      * Get active delegation for a user.
-     *
-     * @param int $userId
-     * @param string|null $module
-     * @return ApprovalDelegation|null
      */
     public function getActiveDelegation(int $userId, ?string $module = null): ?ApprovalDelegation
     {
-        return ApprovalDelegation::where('delegator_id', $userId)
+        return ApprovalDelegation::where('user_id', $userId)
             ->where('is_active', true)
-            ->where('start_date', '<=', now())
-            ->where('end_date', '>=', now())
+            ->where('starts_at', '<=', now())
+            ->where(function ($query) {
+                $query->whereNull('ends_at')
+                    ->orWhere('ends_at', '>=', now());
+            })
             ->when($module, function ($q) use ($module) {
                 $q->where(function ($query) use ($module) {
                     $query->where('module_type', $module)
@@ -50,9 +52,6 @@ class DelegationService
 
     /**
      * End a delegation.
-     *
-     * @param int $delegationId
-     * @return void
      */
     public function endDelegation(int $delegationId): void
     {
@@ -62,43 +61,38 @@ class DelegationService
 
     /**
      * Check and auto-end expired delegations.
-     *
-     * @return int Number of delegations ended
      */
     public function checkAndAutoEnd(): int
     {
         return ApprovalDelegation::where('is_active', true)
-            ->where('end_date', '<', now())
+            ->where('ends_at', '<', now())
             ->update(['is_active' => false]);
     }
 
     /**
      * Get all active delegations for a user.
-     *
-     * @param int $userId
-     * @return Collection
      */
     public function getUserDelegations(int $userId): Collection
     {
-        return ApprovalDelegation::where('delegator_id', $userId)
+        return ApprovalDelegation::where('user_id', $userId)
             ->where('is_active', true)
-            ->with(['delegate'])
+            ->with(['delegatedToUser'])
             ->get();
     }
 
     /**
      * Get delegations where user is the delegate.
-     *
-     * @param int $userId
-     * @return Collection
      */
     public function getDelegationsAsDelegate(int $userId): Collection
     {
-        return ApprovalDelegation::where('delegate_id', $userId)
+        return ApprovalDelegation::where('delegated_to_user_id', $userId)
             ->where('is_active', true)
-            ->where('start_date', '<=', now())
-            ->where('end_date', '>=', now())
-            ->with(['delegator'])
+            ->where('starts_at', '<=', now())
+            ->where(function ($query) {
+                $query->whereNull('ends_at')
+                    ->orWhere('ends_at', '>=', now());
+            })
+            ->with(['user'])
             ->get();
     }
 }

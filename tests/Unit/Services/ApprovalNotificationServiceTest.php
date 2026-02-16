@@ -44,6 +44,7 @@ class ApprovalNotificationServiceTest extends TestCase
         ApprovalApprover::create([
             'approval_step_id' => $step->id,
             'user_id' => $this->user->id,
+            'approver_type' => 'user',
         ]);
         
         $this->request = ApprovalRequest::create([

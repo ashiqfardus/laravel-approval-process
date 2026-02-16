@@ -12,7 +12,7 @@ class DelegationServiceTest extends TestCase
     use RefreshDatabase;
 
     protected DelegationService $service;
-    protected $delegator;
+    protected $user;
     protected $delegate;
 
     protected function setUp(): void
@@ -20,7 +20,7 @@ class DelegationServiceTest extends TestCase
         parent::setUp();
         
         $this->service = new DelegationService();
-        $this->delegator = $this->createUser(['email' => 'delegator@example.com']);
+        $this->user = $this->createUser(['email' => 'user@example.com']);
         $this->delegate = $this->createUser(['email' => 'delegate@example.com']);
     }
 
@@ -28,68 +28,72 @@ class DelegationServiceTest extends TestCase
     public function it_can_create_delegation()
     {
         $delegation = $this->service->createDelegation([
-            'delegator_id' => $this->delegator->id,
-            'delegate_id' => $this->delegate->id,
+            'user_id' => $this->user->id,
+            'delegated_to_user_id' => $this->delegate->id,
             'module_type' => 'App\\Models\\TestModel',
-            'start_date' => now(),
-            'end_date' => now()->addDays(7),
+            'starts_at' => now(),
+            'ends_at' => now()->addDays(7),
             'reason' => 'Vacation',
         ]);
 
-        $this->assertInstanceOf(ApprovalDelegation::class, $delegation);
-        $this->assertEquals($this->delegator->id, $delegation->delegator_id);
-        $this->assertEquals($this->delegate->id, $delegation->delegate_id);
+        $this->assertDatabaseHas('approval_delegations', [
+            'user_id' => $this->user->id,
+            'delegated_to_user_id' => $this->delegate->id,
+        ]);
     }
 
     /** @test */
     public function it_can_get_active_delegation()
     {
         ApprovalDelegation::create([
-            'delegator_id' => $this->delegator->id,
-            'delegate_id' => $this->delegate->id,
+            'user_id' => $this->user->id,
+            'delegated_to_user_id' => $this->delegate->id,
             'module_type' => 'App\\Models\\TestModel',
-            'start_date' => now()->subDay(),
-            'end_date' => now()->addDay(),
+            'starts_at' => now()->subDay(),
+            'ends_at' => now()->addDay(),
+            'is_active' => true,
         ]);
 
-        $delegation = $this->service->getActiveDelegation($this->delegator->id, 'App\\Models\\TestModel');
+        $active = $this->service->getActiveDelegation($this->user->id, 'App\\Models\\TestModel');
 
-        $this->assertNotNull($delegation);
-        $this->assertEquals($this->delegate->id, $delegation->delegate_id);
+        $this->assertNotNull($active);
+        $this->assertEquals($this->delegate->id, $active->delegated_to_user_id);
     }
 
     /** @test */
     public function it_returns_null_for_expired_delegation()
     {
         ApprovalDelegation::create([
-            'delegator_id' => $this->delegator->id,
-            'delegate_id' => $this->delegate->id,
+            'user_id' => $this->user->id,
+            'delegated_to_user_id' => $this->delegate->id,
             'module_type' => 'App\\Models\\TestModel',
-            'start_date' => now()->subDays(10),
-            'end_date' => now()->subDays(3),
+            'starts_at' => now()->subDays(10),
+            'ends_at' => now()->subDay(),
+            'is_active' => true,
         ]);
 
-        $delegation = $this->service->getActiveDelegation($this->delegator->id, 'App\\Models\\TestModel');
+        $active = $this->service->getActiveDelegation($this->user->id, 'App\\Models\\TestModel');
 
-        $this->assertNull($delegation);
+        $this->assertNull($active);
     }
 
     /** @test */
     public function it_can_end_delegation()
     {
         $delegation = ApprovalDelegation::create([
-            'delegator_id' => $this->delegator->id,
-            'delegate_id' => $this->delegate->id,
+            'user_id' => $this->user->id,
+            'delegated_to_user_id' => $this->delegate->id,
             'module_type' => 'App\\Models\\TestModel',
-            'start_date' => now(),
-            'end_date' => now()->addDays(7),
+            'starts_at' => now()->subDay(),
+            'ends_at' => now()->addDay(),
+            'is_active' => true,
         ]);
 
         $this->service->endDelegation($delegation->id);
 
         $this->assertDatabaseHas('approval_delegations', [
             'id' => $delegation->id,
-            'end_date' => now()->toDateString(),
+            'is_active' => false,
         ]);
     }
 
@@ -97,31 +101,32 @@ class DelegationServiceTest extends TestCase
     public function it_can_auto_end_expired_delegations()
     {
         ApprovalDelegation::create([
-            'delegator_id' => $this->delegator->id,
-            'delegate_id' => $this->delegate->id,
+            'user_id' => $this->user->id,
+            'delegated_to_user_id' => $this->delegate->id,
             'module_type' => 'App\\Models\\TestModel',
-            'start_date' => now()->subDays(10),
-            'end_date' => now()->subDay(),
+            'starts_at' => now()->subDays(10),
+            'ends_at' => now()->subDay(),
+            'is_active' => true,
         ]);
 
         $count = $this->service->checkAndAutoEnd();
 
-        // The delegation is already expired, so it should be counted
-        $this->assertEquals(0, $count); // No action needed as it's already past end_date
+        $this->assertEquals(1, $count);
     }
 
     /** @test */
     public function it_can_get_user_delegations()
     {
         ApprovalDelegation::create([
-            'delegator_id' => $this->delegator->id,
-            'delegate_id' => $this->delegate->id,
+            'user_id' => $this->user->id,
+            'delegated_to_user_id' => $this->delegate->id,
             'module_type' => 'App\\Models\\TestModel',
-            'start_date' => now(),
-            'end_date' => now()->addDays(7),
+            'starts_at' => now()->subDay(),
+            'ends_at' => now()->addDay(),
+            'is_active' => true,
         ]);
 
-        $delegations = $this->service->getUserDelegations($this->delegator->id);
+        $delegations = $this->service->getUserDelegations($this->user->id);
 
         $this->assertCount(1, $delegations);
     }
@@ -130,11 +135,12 @@ class DelegationServiceTest extends TestCase
     public function it_can_get_delegations_as_delegate()
     {
         ApprovalDelegation::create([
-            'delegator_id' => $this->delegator->id,
-            'delegate_id' => $this->delegate->id,
+            'user_id' => $this->user->id,
+            'delegated_to_user_id' => $this->delegate->id,
             'module_type' => 'App\\Models\\TestModel',
-            'start_date' => now(),
-            'end_date' => now()->addDays(7),
+            'starts_at' => now()->subDay(),
+            'ends_at' => now()->addDay(),
+            'is_active' => true,
         ]);
 
         $delegations = $this->service->getDelegationsAsDelegate($this->delegate->id);

@@ -90,7 +90,6 @@ class ApprovalNotificationService
     {
         return ApprovalNotification::forUser($userId)
             ->unread()
-            ->with('approvalRequest.requestable')
             ->orderByDesc('created_at')
             ->get();
     }

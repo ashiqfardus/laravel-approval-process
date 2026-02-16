@@ -55,6 +55,7 @@ class ApprovalPermissionServiceTest extends TestCase
         ApprovalApprover::create([
             'approval_step_id' => $this->workflow->activeSteps()->where('sequence', 2)->first()->id,
             'user_id' => $this->user->id,
+            'approver_type' => 'user',
         ]);
 
         $level = $this->service->getUserLevel($this->user->id, 'App\\Models\\TestModel');
@@ -77,6 +78,7 @@ class ApprovalPermissionServiceTest extends TestCase
         ApprovalApprover::create([
             'approval_step_id' => $this->workflow->activeSteps()->where('sequence', 2)->first()->id,
             'user_id' => $this->user->id,
+            'approver_type' => 'user',
         ]);
 
         $canCreate = $this->service->canCreateDocument($this->user->id, 'App\\Models\\TestModel');
@@ -99,11 +101,11 @@ class ApprovalPermissionServiceTest extends TestCase
         
         // Create delegation
         ApprovalDelegation::create([
-            'delegator_id' => $this->user->id,
-            'delegate_id' => $delegate->id,
+            'user_id' => $this->user->id,
+            'delegated_to_user_id' => $delegate->id,
             'module_type' => 'App\\Models\\TestModel',
-            'start_date' => now()->subDay(),
-            'end_date' => now()->addDay(),
+            'starts_at' => now()->subDay(),
+            'ends_at' => now()->addDay(),
         ]);
 
         $effectiveApprover = $this->service->getEffectiveApprover($this->user->id, 'App\\Models\\TestModel');
@@ -125,6 +127,7 @@ class ApprovalPermissionServiceTest extends TestCase
         ApprovalApprover::create([
             'approval_step_id' => $this->workflow->activeSteps()->first()->id,
             'user_id' => $this->user->id,
+            'approver_type' => 'user',
         ]);
 
         $isApprover = $this->service->isApprover($this->user->id, 'App\\Models\\TestModel');
@@ -140,6 +143,7 @@ class ApprovalPermissionServiceTest extends TestCase
         ApprovalApprover::create([
             'approval_step_id' => $step->id,
             'user_id' => $this->user->id,
+            'approver_type' => 'user',
         ]);
 
         $approvers = $this->service->getApproversAtLevel('App\\Models\\TestModel', 1);

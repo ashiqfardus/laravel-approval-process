@@ -4,12 +4,22 @@ namespace AshiqFardus\ApprovalProcess\Tests;
 
 use Orchestra\Testbench\TestCase as Orchestra;
 use AshiqFardus\ApprovalProcess\ApprovalProcessServiceProvider;
+use Illuminate\Foundation\Auth\User;
 
 abstract class TestCase extends Orchestra
 {
     protected function setUp(): void
     {
         parent::setUp();
+
+        // Create users table for testing
+        $this->app['db']->connection()->getSchemaBuilder()->create('users', function ($table) {
+            $table->id();
+            $table->string('name');
+            $table->string('email')->unique();
+            $table->string('password');
+            $table->timestamps();
+        });
 
         $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
     }
@@ -40,7 +50,12 @@ abstract class TestCase extends Orchestra
      */
     protected function createUser(array $attributes = [])
     {
-        return \Illuminate\Foundation\Auth\User::create(array_merge([
+        $user = new class extends User {
+            protected $table = 'users';
+            protected $guarded = [];
+        };
+
+        return $user::create(array_merge([
             'name' => 'Test User',
             'email' => 'test@example.com',
             'password' => bcrypt('password'),

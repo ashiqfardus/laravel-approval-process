@@ -33,7 +33,7 @@ class ApprovalWorkflowTest extends TestCase
         // Create a 2-level workflow
         $this->workflow = Workflow::create([
             'name' => 'Purchase Order Approval',
-            'model_type' => 'App\\Models\\PurchaseOrder',
+            'model_type' => 'stdClass',
             'is_active' => true,
         ]);
         
@@ -58,11 +58,13 @@ class ApprovalWorkflowTest extends TestCase
         ApprovalApprover::create([
             'approval_step_id' => $step1->id,
             'user_id' => $this->approver1->id,
+            'approver_type' => 'user',
         ]);
         
         ApprovalApprover::create([
             'approval_step_id' => $step2->id,
             'user_id' => $this->approver2->id,
+            'approver_type' => 'user',
         ]);
     }
 
@@ -198,6 +200,7 @@ class ApprovalWorkflowTest extends TestCase
         ApprovalApprover::create([
             'approval_step_id' => $this->workflow->activeSteps()->where('sequence', 2)->first()->id,
             'user_id' => $this->creator->id,
+            'approver_type' => 'user',
         ]);
 
         $model = new \stdClass();

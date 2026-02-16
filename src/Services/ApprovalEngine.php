@@ -12,8 +12,13 @@ class ApprovalEngine
 {
     /**
      * Submit a request for approval.
+     * 
+     * @param Model|object $model Eloquent model or any object with id property
+     * @param int $userId
+     * @param array $metadata
+     * @return ApprovalRequest
      */
-    public function submitRequest(Model $model, int $userId, array $metadata = []): ApprovalRequest
+    public function submitRequest($model, int $userId, array $metadata = []): ApprovalRequest
     {
         $modelClass = get_class($model);
 
@@ -28,10 +33,10 @@ class ApprovalEngine
         $request = ApprovalRequest::create([
             'workflow_id' => $workflow->id,
             'requestable_type' => $modelClass,
-            'requestable_id' => $model->id,
+            'requestable_id' => $model->id ?? null,
             'requested_by_user_id' => $userId,
             'status' => ApprovalRequest::STATUS_SUBMITTED,
-            'data_snapshot' => $model->toArray(),
+            'data_snapshot' => method_exists($model, 'toArray') ? $model->toArray() : json_decode(json_encode($model), true),
             'metadata' => $metadata,
             'submitted_at' => now(),
         ]);
@@ -54,6 +59,15 @@ class ApprovalEngine
 
         if (!$step) {
             throw new \Exception("No current step found for request #{$request->id}");
+        }
+
+        // Mark the approver as approved
+        $approver = $step->approvers()->where('user_id', $userId)->first();
+        if ($approver) {
+            $approver->update([
+                'is_approved' => true,
+                'approval_at' => now(),
+            ]);
         }
 
         // Record the action
@@ -184,18 +198,28 @@ class ApprovalEngine
     protected function moveToNextStep(ApprovalRequest $request, ApprovalStep $currentStep): void
     {
         $nextStep = $currentStep->getNextStep();
-        $request->update(['current_step_id' => $nextStep?->id]);
+        
+        if ($nextStep) {
+            $request->update(['current_step_id' => $nextStep->id]);
+        } else {
+            // No next step - workflow is complete
+            $request->update([
+                'current_step_id' => null,
+                'status' => ApprovalRequest::STATUS_APPROVED,
+                'completed_at' => now(),
+            ]);
+        }
     }
 
     /**
      * Submit request with auto-approval for higher-level creators.
      *
-     * @param Model $model
+     * @param Model|object $model
      * @param int $userId
      * @param array $metadata
      * @return ApprovalRequest
      */
-    public function createWithAutoApproval(Model $model, int $userId, array $metadata = []): ApprovalRequest
+    public function createWithAutoApproval($model, int $userId, array $metadata = []): ApprovalRequest
     {
         $modelClass = get_class($model);
         $permissionService = app(ApprovalPermissionService::class);
