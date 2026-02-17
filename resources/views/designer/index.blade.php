@@ -210,13 +210,49 @@
                         
                         <div class="mt-2 space-y-2">
                             <template x-for="(approver, index) in selectedStep.approvers" :key="index">
-                                <div class="flex items-center justify-between bg-gray-50 p-2 rounded">
-                                    <span class="text-sm" x-text="approver.type + ': ' + approver.name"></span>
-                                    <button @click="removeApprover(index)" class="text-red-600 hover:text-red-800">
-                                        <i class="fas fa-times"></i>
-                                    </button>
+                                <div class="bg-gray-50 p-3 rounded">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <span class="text-sm font-medium" x-text="approver.type + ': ' + approver.name"></span>
+                                        <button @click="removeApprover(index)" class="text-red-600 hover:text-red-800">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <label class="text-xs text-gray-600">Weightage:</label>
+                                        <input 
+                                            type="number" 
+                                            x-model="approver.weightage"
+                                            min="0"
+                                            max="100"
+                                            class="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500"
+                                            placeholder="100"
+                                        >
+                                        <span class="text-xs text-gray-500">%</span>
+                                    </div>
                                 </div>
                             </template>
+                        </div>
+
+                        <!-- Minimum Approval Percentage -->
+                        <div class="mt-4 p-3 bg-blue-50 rounded">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-percentage mr-1"></i>
+                                Minimum Approval Percentage
+                            </label>
+                            <div class="flex items-center gap-2">
+                                <input 
+                                    type="number" 
+                                    x-model="selectedStep.minimum_approval_percentage"
+                                    min="0"
+                                    max="100"
+                                    class="w-24 px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500"
+                                    placeholder="100"
+                                >
+                                <span class="text-sm text-gray-600">% required to proceed</span>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">
+                                Set the minimum weightage percentage needed for this step to complete (e.g., 51% for majority, 75% for supermajority, 100% for unanimous)
+                            </p>
                         </div>
                     </div>
 

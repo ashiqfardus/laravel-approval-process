@@ -2,11 +2,14 @@
 
 namespace AshiqFardus\ApprovalProcess\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Approver extends Model
 {
+    use HasFactory;
+
     protected $table = 'approval_approvers';
 
     protected $fillable = [
@@ -17,6 +20,7 @@ class Approver extends Model
         'is_approved',
         'approval_at',
         'sequence',
+        'weightage',
     ];
 
     protected $casts = [
@@ -78,5 +82,13 @@ class Approver extends Model
 
         // Implementation for resolving other types
         return null;
+    }
+
+    /**
+     * Create a new factory instance for the model.
+     */
+    protected static function newFactory()
+    {
+        return \AshiqFardus\ApprovalProcess\Tests\Factories\ApproverFactory::new();
     }
 }

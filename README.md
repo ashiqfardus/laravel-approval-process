@@ -30,12 +30,22 @@ use AshiqFardus\ApprovalProcess\Traits\Approvable;
 class Offer extends Model { use Approvable; }
 ```
 
-### 2. Create Workflow
+### 2. Create Workflow with Weightage
 
 ```php
 $workflow = Workflow::create(['name' => 'Offer', 'model_type' => Offer::class]);
-$step = ApprovalStep::create(['workflow_id' => 1, 'name' => 'Manager', 'sequence' => 1]);
-Approver::create(['approval_step_id' => 1, 'approver_type' => 'role', 'approver_id' => 'manager']);
+$step = ApprovalStep::create([
+    'workflow_id' => 1, 
+    'name' => 'Manager', 
+    'sequence' => 1,
+    'minimum_approval_percentage' => 51, // NEW: Only need 51% to proceed
+]);
+
+// Add approvers with weightage (voting power)
+Approver::create(['approval_step_id' => 1, 'approver_type' => 'user', 'user_id' => 1, 'weightage' => 50]);
+Approver::create(['approval_step_id' => 1, 'approver_type' => 'user', 'user_id' => 2, 'weightage' => 30]);
+Approver::create(['approval_step_id' => 1, 'approver_type' => 'user', 'user_id' => 3, 'weightage' => 20]);
+// Result: If user 1 (50%) + user 2 (30%) approve = 80% ≥ 51% → Step proceeds!
 ```
 
 ### 3. Submit
@@ -85,6 +95,14 @@ $engine->reject($approval, auth()->id(), 'reason');
 ✅ **Request Management** - Track and manage approval requests with timeline  
 ✅ **Analytics Dashboards** - Comprehensive performance insights and metrics  
 ✅ **Mobile Responsive** - Works perfectly on all devices
+
+### Weightage-Based Approvals (NEW! 🎉)
+✅ **Dynamic Approval Thresholds** - Set any percentage from 0-100% (51%, 75%, 100%, etc.)  
+✅ **Weighted Voting** - Each approver has customizable voting power/weightage  
+✅ **Real-time Progress Tracking** - Visual progress bars show current approval percentage  
+✅ **Flexible Strategies** - Equal, hierarchical, or majority-one distributions  
+✅ **Smart Calculations** - Automatic calculation of remaining approvals needed  
+✅ **Validation** - Built-in validation for weightage distributions
 
 ---
 

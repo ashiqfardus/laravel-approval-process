@@ -15,6 +15,7 @@ use AshiqFardus\ApprovalProcess\Http\Controllers\DocumentTemplateController;
 use AshiqFardus\ApprovalProcess\Http\Controllers\SignatureController;
 use AshiqFardus\ApprovalProcess\Http\Controllers\AnalyticsController;
 use AshiqFardus\ApprovalProcess\Http\Controllers\ReportController;
+use AshiqFardus\ApprovalProcess\Http\Controllers\Api\WeightageController;
 
 Route::prefix(config('approval-process.paths.api_prefix'))
     ->middleware(['api', 'auth:api'])
@@ -160,4 +161,15 @@ Route::prefix(config('approval-process.paths.api_prefix'))
         Route::get('reports-audit', [ReportController::class, 'auditReport']);
         Route::get('reports-types', [ReportController::class, 'reportTypes']);
         Route::get('reports-frequencies', [ReportController::class, 'frequencies']);
+
+        // Weightage routes
+        Route::get('steps/{step}/weightage/breakdown', [WeightageController::class, 'getStepBreakdown']);
+        Route::get('steps/{step}/weightage/remaining', [WeightageController::class, 'getRemainingApprovals']);
+        Route::get('steps/{step}/weightage/percentages', [WeightageController::class, 'getApproverPercentages']);
+        Route::put('steps/{step}/weightage/minimum-percentage', [WeightageController::class, 'updateMinimumPercentage']);
+        Route::put('steps/{step}/weightage/bulk-update', [WeightageController::class, 'bulkUpdateWeightages']);
+        Route::post('steps/{step}/weightage/validate', [WeightageController::class, 'validateDistribution']);
+        Route::get('requests/{request}/weightage/breakdown', [WeightageController::class, 'getRequestBreakdown']);
+        Route::put('approvers/{approver}/weightage', [WeightageController::class, 'updateApproverWeightage']);
+        Route::post('weightage/suggest', [WeightageController::class, 'suggestDistribution']);
     });

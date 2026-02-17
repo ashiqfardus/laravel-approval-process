@@ -12,13 +12,16 @@ class ApprovalEngine
 {
     protected ConditionEvaluator $conditionEvaluator;
     protected ParallelWorkflowManager $parallelManager;
+    protected WeightageCalculator $weightageCalculator;
 
     public function __construct(
         ConditionEvaluator $conditionEvaluator = null,
-        ParallelWorkflowManager $parallelManager = null
+        ParallelWorkflowManager $parallelManager = null,
+        WeightageCalculator $weightageCalculator = null
     ) {
         $this->conditionEvaluator = $conditionEvaluator ?? new ConditionEvaluator();
         $this->parallelManager = $parallelManager ?? new ParallelWorkflowManager();
+        $this->weightageCalculator = $weightageCalculator ?? new WeightageCalculator();
     }
     /**
      * Submit a request for approval.
@@ -98,6 +101,10 @@ class ApprovalEngine
             ApprovalAction::ACTION_APPROVED,
             $remarks
         );
+
+        // Update current approval percentage
+        $currentPercentage = $this->weightageCalculator->calculateCurrentPercentage($step);
+        $request->update(['current_approval_percentage' => $currentPercentage]);
 
         // Check if this step requires all approvers to approve
         if ($step->isSerial() || $step->isParallel()) {
@@ -195,20 +202,11 @@ class ApprovalEngine
      */
     protected function checkStepCompletion(ApprovalRequest $request, ApprovalStep $step): void
     {
-        $approvers = $step->approvers;
-        $approvedCount = $approvers->where('is_approved', true)->count();
-        $totalCount = $approvers->count();
+        // Use weightage-based calculation
+        $hasReachedMinimum = $this->weightageCalculator->hasReachedMinimumPercentage($step);
 
-        if ($step->isSerial()) {
-            // For serial, check if all have approved
-            if ($approvedCount === $totalCount) {
-                $this->moveToNextStep($request, $step);
-            }
-        } elseif ($step->isParallel()) {
-            // For parallel, all must approve
-            if ($approvedCount === $totalCount) {
-                $this->moveToNextStep($request, $step);
-            }
+        if ($hasReachedMinimum) {
+            $this->moveToNextStep($request, $step);
         }
     }
 

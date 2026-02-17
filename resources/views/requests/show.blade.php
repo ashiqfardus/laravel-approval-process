@@ -81,12 +81,52 @@
                             <h4 class="font-semibold text-gray-800">{{ $step->name }}</h4>
                             <p class="text-sm text-gray-600 mt-1">{{ $step->description }}</p>
                             
-                            @if($step->approvers->count() > 0)
-                                <div class="mt-2 flex flex-wrap gap-2">
-                                    @foreach($step->approvers as $approver)
-                                        <span class="px-2 py-1 bg-indigo-100 text-indigo-800 rounded text-xs">
-                                            {{ $approver->approver_type }}: {{ $approver->approver_id }}
+                            @if($step->id === $request->current_step_id && $step->approvers->count() > 0)
+                                @php
+                                    $totalWeightage = $step->approvers->sum('weightage') ?: 100;
+                                    $approvedWeightage = $step->approvers->where('is_approved', true)->sum('weightage');
+                                    $currentPercentage = $totalWeightage > 0 ? round(($approvedWeightage / $totalWeightage) * 100, 1) : 0;
+                                    $minimumPercentage = $step->minimum_approval_percentage ?? 100;
+                                @endphp
+                                
+                                <!-- Approval Progress Bar -->
+                                <div class="mt-3 p-3 bg-blue-50 rounded">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <span class="text-sm font-medium text-gray-700">Approval Progress</span>
+                                        <span class="text-sm font-semibold {{ $currentPercentage >= $minimumPercentage ? 'text-green-600' : 'text-blue-600' }}">
+                                            {{ $currentPercentage }}% / {{ $minimumPercentage }}%
                                         </span>
+                                    </div>
+                                    <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                                        <div class="h-full {{ $currentPercentage >= $minimumPercentage ? 'bg-green-500' : 'bg-blue-500' }} transition-all duration-500"
+                                             style="width: {{ min($currentPercentage, 100) }}%"></div>
+                                    </div>
+                                    <p class="text-xs text-gray-600 mt-1">
+                                        @if($currentPercentage >= $minimumPercentage)
+                                            <i class="fas fa-check-circle text-green-500"></i> Minimum threshold reached
+                                        @else
+                                            Need {{ $minimumPercentage - $currentPercentage }}% more to proceed
+                                        @endif
+                                    </p>
+                                </div>
+                            @endif
+                            
+                            @if($step->approvers->count() > 0)
+                                <div class="mt-2 space-y-1">
+                                    @foreach($step->approvers as $approver)
+                                        @php
+                                            $totalWeightage = $step->approvers->sum('weightage') ?: 100;
+                                            $approverPercentage = $totalWeightage > 0 ? round(($approver->weightage / $totalWeightage) * 100, 1) : 0;
+                                        @endphp
+                                        <div class="flex items-center justify-between text-xs">
+                                            <span class="px-2 py-1 {{ $approver->is_approved ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-700' }} rounded">
+                                                @if($approver->is_approved)
+                                                    <i class="fas fa-check mr-1"></i>
+                                                @endif
+                                                {{ $approver->approver_type }}: {{ $approver->approver_id }}
+                                            </span>
+                                            <span class="text-gray-600 font-medium">{{ $approverPercentage }}%</span>
+                                        </div>
                                     @endforeach
                                 </div>
                             @endif

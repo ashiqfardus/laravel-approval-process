@@ -2,6 +2,7 @@
 
 namespace AshiqFardus\ApprovalProcess\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -9,7 +10,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Workflow extends Model
 {
-    use SoftDeletes;
+    use HasFactory, SoftDeletes;
 
     protected $table = 'approval_workflows';
 
@@ -94,5 +95,13 @@ class Workflow extends Model
     public function canApplyTo(Model $model): bool
     {
         return $this->model_type === $model::class && $this->is_active;
+    }
+
+    /**
+     * Create a new factory instance for the model.
+     */
+    protected static function newFactory()
+    {
+        return \AshiqFardus\ApprovalProcess\Tests\Factories\WorkflowFactory::new();
     }
 }

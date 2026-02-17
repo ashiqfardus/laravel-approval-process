@@ -2,12 +2,15 @@
 
 namespace AshiqFardus\ApprovalProcess\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ApprovalStep extends Model
 {
+    use HasFactory;
+
     protected $table = 'approval_steps';
 
     protected $fillable = [
@@ -28,6 +31,7 @@ class ApprovalStep extends Model
         'escalation_strategy',
         'allows_delegation',
         'allows_partial_approval',
+        'minimum_approval_percentage',
     ];
 
     protected $casts = [
@@ -160,5 +164,13 @@ class ApprovalStep extends Model
     public function getSLAHours(): ?int
     {
         return $this->sla_hours;
+    }
+
+    /**
+     * Create a new factory instance for the model.
+     */
+    protected static function newFactory()
+    {
+        return \AshiqFardus\ApprovalProcess\Tests\Factories\ApprovalStepFactory::new();
     }
 }

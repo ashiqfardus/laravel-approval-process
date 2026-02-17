@@ -2,6 +2,7 @@
 
 namespace AshiqFardus\ApprovalProcess\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -10,11 +11,14 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class ApprovalRequest extends Model
 {
+    use HasFactory;
+
     protected $table = 'approval_requests';
 
     protected $fillable = [
         'workflow_id',
         'current_step_id',
+        'current_approval_percentage',
         'requestable_type',
         'requestable_id',
         'requested_by_user_id',
@@ -250,5 +254,13 @@ class ApprovalRequest extends Model
             'rejected_at' => null,
             'rejection_reason' => null,
         ]);
+    }
+
+    /**
+     * Create a new factory instance for the model.
+     */
+    protected static function newFactory()
+    {
+        return \AshiqFardus\ApprovalProcess\Tests\Factories\ApprovalRequestFactory::new();
     }
 }
