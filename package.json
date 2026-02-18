@@ -1,0 +1,44 @@
+{
+  "name": "laravel-approval-process",
+  "version": "1.0.0",
+  "description": "**Author**: Ashiq Fardus | **Email**: <ashiqfardus@hotmail.com>  \r **Package**: ashiqfardus/laravel-approval-process  \r **Laravel**: 10, 11, 12 | **PHP**: 8.1+",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "publish": "vite build && cd ../laravel-approval-process-demo && php artisan vendor:publish --tag=approval-process-assets --force"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ashiqfardus/laravel-approval-process.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/ashiqfardus/laravel-approval-process/issues"
+  },
+  "homepage": "https://github.com/ashiqfardus/laravel-approval-process#readme",
+  "dependencies": {
+    "axios": "^1.13.5",
+    "chart.js": "^4.5.1",
+    "laravel-echo": "^1.19.0",
+    "pinia": "^2.3.1",
+    "pusher-js": "^8.4.0",
+    "vue": "^3.5.28",
+    "vue-router": "^4.6.4"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2.4",
+    "autoprefixer": "^10.4.24",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.19",
+    "vite": "^5.4.21"
+  }
+}

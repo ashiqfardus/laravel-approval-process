@@ -47,7 +47,7 @@ return new class extends Migration
             $table->timestamps();
 
             $table->index(['approval_request_id', 'status']);
-            $table->unique(['approval_request_id', 'parallel_group_id']);
+            $table->unique(['approval_request_id', 'parallel_group_id'], 'parallel_exec_request_group_unique');
         });
 
         // Track which steps are currently active in parallel execution

@@ -56,7 +56,7 @@ class ApprovalEngine
         $request = ApprovalRequest::create([
             'workflow_id' => $workflow->id,
             'requestable_type' => $modelClass,
-            'requestable_id' => $model->id ?? null,
+            'requestable_id' => $model->id ?? $metadata['requestable_id'] ?? null,
             'requested_by_user_id' => $userId,
             'status' => ApprovalRequest::STATUS_SUBMITTED,
             'data_snapshot' => method_exists($model, 'toArray') ? $model->toArray() : json_decode(json_encode($model), true),
@@ -396,9 +396,21 @@ class ApprovalEngine
     /**
      * Get pending approvals for a user.
      */
+    /**
+     * Get pending approvals for a user.
+     */
     public function getPendingApprovalsForUser(int $userId)
     {
-        // Implementation to get pending approvals
+        return ApprovalRequest::whereHas('currentStep', function ($query) use ($userId) {
+            $query->whereHas('approvers', function ($q) use ($userId) {
+                $q->where('user_id', $userId)
+                  ->where('is_approved', false);
+            });
+        })
+        ->where('status', ApprovalRequest::STATUS_SUBMITTED)
+        ->with(['workflow', 'currentStep', 'requestable'])
+        ->orderBy('submitted_at', 'desc')
+        ->get();
     }
 
     /**

@@ -80,8 +80,16 @@ class ApproverResolver
      */
     protected function resolveByDepartmentHead(Model $model): ?int
     {
-        // Implementation depends on your user/department structure
-        return null;
+        // Check if model has a user relation
+        if (method_exists($model, 'user') || method_exists($model, 'requester')) {
+            $user = $model->user ?? $model->requester;
+            
+            if ($user && $user->department) {
+                return $user->department->head_user_id ?? null;
+            }
+        }
+        
+        return null; 
     }
 
     /**

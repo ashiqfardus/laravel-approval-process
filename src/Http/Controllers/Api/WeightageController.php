@@ -25,8 +25,18 @@ class WeightageController extends Controller
      *
      * GET /api/approval-process/steps/{step}/weightage/breakdown
      */
-    public function getStepBreakdown(ApprovalStep $step): JsonResponse
+    public function getStepBreakdown($stepId): JsonResponse
     {
+        // Query with relationships
+        $step = ApprovalStep::with('approvers')->find($stepId);
+        
+        if (!$step) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Step not found',
+            ], 404);
+        }
+        
         $breakdown = $this->calculator->getApprovalBreakdown($step);
 
         return response()->json([
@@ -40,8 +50,17 @@ class WeightageController extends Controller
      *
      * GET /api/approval-process/requests/{request}/weightage/breakdown
      */
-    public function getRequestBreakdown(ApprovalRequest $request): JsonResponse
+    public function getRequestBreakdown($requestId): JsonResponse
     {
+        $request = ApprovalRequest::with('currentStep.approvers')->find($requestId);
+        
+        if (!$request) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Request not found',
+            ], 404);
+        }
+        
         if (!$request->currentStep) {
             return response()->json([
                 'success' => false,
@@ -62,8 +81,17 @@ class WeightageController extends Controller
      *
      * GET /api/approval-process/steps/{step}/weightage/remaining
      */
-    public function getRemainingApprovals(ApprovalStep $step): JsonResponse
+    public function getRemainingApprovals($stepId): JsonResponse
     {
+        $step = ApprovalStep::with('approvers')->find($stepId);
+        
+        if (!$step) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Step not found',
+            ], 404);
+        }
+        
         $remaining = $this->calculator->getRemainingApprovalsNeeded($step);
 
         return response()->json([
@@ -77,7 +105,7 @@ class WeightageController extends Controller
      *
      * PUT /api/approval-process/steps/{step}/weightage/minimum-percentage
      */
-    public function updateMinimumPercentage(Request $request, ApprovalStep $step): JsonResponse
+    public function updateMinimumPercentage(Request $request, $stepId): JsonResponse
     {
         $validator = Validator::make($request->all(), [
             'minimum_percentage' => 'required|integer|min:0|max:100',
@@ -89,6 +117,15 @@ class WeightageController extends Controller
                 'message' => 'Validation failed',
                 'errors' => $validator->errors(),
             ], 422);
+        }
+
+        $step = ApprovalStep::find($stepId);
+        
+        if (!$step) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Step not found',
+            ], 404);
         }
 
         $step->update([
@@ -110,7 +147,7 @@ class WeightageController extends Controller
      *
      * PUT /api/approval-process/approvers/{approver}/weightage
      */
-    public function updateApproverWeightage(Request $request, Approver $approver): JsonResponse
+    public function updateApproverWeightage(Request $request, $approverId): JsonResponse
     {
         $validator = Validator::make($request->all(), [
             'weightage' => 'required|integer|min:0|max:100',
@@ -124,12 +161,22 @@ class WeightageController extends Controller
             ], 422);
         }
 
+        $approver = Approver::find($approverId);
+        
+        if (!$approver) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Approver not found',
+            ], 404);
+        }
+
         $approver->update([
             'weightage' => $request->input('weightage'),
         ]);
 
-        // Recalculate step breakdown
-        $breakdown = $this->calculator->getApprovalBreakdown($approver->step);
+        // Recalculate step breakdown with fresh query
+        $step = ApprovalStep::with('approvers')->find($approver->approval_step_id);
+        $breakdown = $step ? $this->calculator->getApprovalBreakdown($step) : null;
 
         return response()->json([
             'success' => true,
@@ -147,7 +194,7 @@ class WeightageController extends Controller
      *
      * PUT /api/approval-process/steps/{step}/weightage/bulk-update
      */
-    public function bulkUpdateWeightages(Request $request, ApprovalStep $step): JsonResponse
+    public function bulkUpdateWeightages(Request $request, $stepId): JsonResponse
     {
         $validator = Validator::make($request->all(), [
             'approvers' => 'required|array',
@@ -163,6 +210,15 @@ class WeightageController extends Controller
             ], 422);
         }
 
+        $step = ApprovalStep::find($stepId);
+        
+        if (!$step) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Step not found',
+            ], 404);
+        }
+
         $approvers = $request->input('approvers');
 
         foreach ($approvers as $approverData) {
@@ -171,8 +227,9 @@ class WeightageController extends Controller
                 ->update(['weightage' => $approverData['weightage']]);
         }
 
-        // Get updated breakdown
-        $breakdown = $this->calculator->getApprovalBreakdown($step->fresh());
+        // Get updated breakdown (refresh the step with approvers)
+        $step = ApprovalStep::with('approvers')->find($step->id);
+        $breakdown = $this->calculator->getApprovalBreakdown($step);
 
         return response()->json([
             'success' => true,
@@ -186,8 +243,17 @@ class WeightageController extends Controller
      *
      * POST /api/approval-process/steps/{step}/weightage/validate
      */
-    public function validateDistribution(Request $request, ApprovalStep $step): JsonResponse
+    public function validateDistribution(Request $request, $stepId): JsonResponse
     {
+        $step = ApprovalStep::with('approvers')->find($stepId);
+        
+        if (!$step) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Step not found',
+            ], 404);
+        }
+        
         $approvers = $step->approvers->map(function ($approver) {
             return [
                 'id' => $approver->id,
@@ -244,8 +310,17 @@ class WeightageController extends Controller
      *
      * GET /api/approval-process/steps/{step}/weightage/percentages
      */
-    public function getApproverPercentages(ApprovalStep $step): JsonResponse
+    public function getApproverPercentages($stepId): JsonResponse
     {
+        $step = ApprovalStep::with('approvers')->find($stepId);
+        
+        if (!$step) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Step not found',
+            ], 404);
+        }
+        
         $percentages = $this->calculator->getApproverPercentages($step);
 
         return response()->json([

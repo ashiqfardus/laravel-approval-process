@@ -17,6 +17,9 @@ class WeightageApiTest extends TestCase
     {
         parent::setUp();
         $this->withoutMiddleware();
+        
+        // Run the weightage migration
+        $this->artisan('migrate', ['--path' => 'database/migrations/2024_01_01_000006_add_weightage_to_approval_system.php']);
     }
 
     /** @test */
@@ -297,13 +300,22 @@ class WeightageApiTest extends TestCase
      */
     protected function createStepWithApprovers(array $approvers, array $stepAttributes = []): ApprovalStep
     {
-        $step = ApprovalStep::factory()->create(array_merge([
+        $workflow = Workflow::factory()->create();
+        
+        $step = ApprovalStep::create(array_merge([
+            'workflow_id' => $workflow->id,
+            'name' => 'Test Step',
+            'sequence' => 1,
+            'approval_type' => 'serial',
             'minimum_approval_percentage' => 100,
         ], $stepAttributes));
 
         foreach ($approvers as $approverData) {
-            Approver::factory()->create(array_merge([
+            Approver::create(array_merge([
                 'approval_step_id' => $step->id,
+                'approver_type' => 'user',
+                'user_id' => 1,
+                'weightage' => 100,
             ], $approverData));
         }
 

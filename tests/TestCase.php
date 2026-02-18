@@ -41,8 +41,12 @@ abstract class TestCase extends Orchestra
             'prefix'   => '',
         ]);
 
+        // Set app key for encryption
+        $app['config']->set('app.key', 'base64:'.base64_encode(random_bytes(32)));
+
         // Setup approval process config
         $app['config']->set('approval-process.paths.api_prefix', 'api/approval-process');
+        $app['config']->set('approval-process.paths.web_prefix', 'approval-process');
         
         // Setup auth guards for testing - use a custom guard that always passes
         $app['config']->set('auth.guards.api', [

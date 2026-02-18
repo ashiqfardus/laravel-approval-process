@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use AshiqFardus\ApprovalProcess\Services\ApprovalEngine;
 
 class ApprovalRequest extends Model
 {
@@ -98,6 +99,14 @@ class ApprovalRequest extends Model
     }
 
     /**
+     * Alias for requestedBy() for convenience.
+     */
+    public function requester(): BelongsTo
+    {
+        return $this->requestedBy();
+    }
+
+    /**
      * Get notifications for this request.
      */
     public function notifications(): HasMany
@@ -136,19 +145,13 @@ class ApprovalRequest extends Model
     /**
      * Approve the request.
      */
+    /**
+     * Approve the request.
+     */
     public function approve(int $userId, ?string $remarks = null): void
     {
-        // Check if all approvers at current step have approved
-        $nextStep = $this->currentStep->getNextStep();
-
-        if ($nextStep) {
-            $this->update(['current_step_id' => $nextStep->id]);
-        } else {
-            $this->update([
-                'status' => self::STATUS_APPROVED,
-                'completed_at' => now(),
-            ]);
-        }
+        // Delegate to ApprovalEngine to ensure all side effects (actions, notifications, etc.) are handled
+        app(ApprovalEngine::class)->approve($this, $userId, $remarks);
     }
 
     /**
@@ -156,11 +159,8 @@ class ApprovalRequest extends Model
      */
     public function reject(int $userId, string $reason, ?string $remarks = null): void
     {
-        $this->update([
-            'status' => self::STATUS_REJECTED,
-            'rejected_at' => now(),
-            'rejection_reason' => $reason,
-        ]);
+        // Delegate to ApprovalEngine
+        app(ApprovalEngine::class)->reject($this, $userId, $reason, $remarks);
     }
 
     /**

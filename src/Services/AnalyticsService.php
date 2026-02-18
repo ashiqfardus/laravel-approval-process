@@ -120,7 +120,8 @@ class AnalyticsService
             $q->where('approver_type', 'user')
               ->where('approver_id', $userId);
         })
-        ->where('is_overdue', true)
+        ->where('sla_deadline', '<', now())
+        ->where('status', 'pending')
         ->count();
 
         return UserMetric::updateOrCreate(
@@ -226,7 +227,10 @@ class AnalyticsService
         $pendingRequests = (clone $query)->whereIn('status', ['submitted', 'in_progress'])->count();
         $approvedRequests = (clone $query)->where('status', 'approved')->count();
         $rejectedRequests = (clone $query)->where('status', 'rejected')->count();
-        $overdueRequests = (clone $query)->where('is_overdue', true)->count();
+        $overdueRequests = (clone $query)
+            ->where('sla_deadline', '<', now())
+            ->where('status', 'pending')
+            ->count();
 
         // Average approval time (last 30 days)
         $avgApprovalTime = (clone $query)

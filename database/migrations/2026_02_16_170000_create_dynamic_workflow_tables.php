@@ -43,8 +43,8 @@ return new class extends Migration
             $table->timestamp('applied_at')->nullable();
             $table->timestamps();
 
-            $table->index(['approval_request_id', 'modification_type']);
-            $table->index(['step_id', 'is_applied']);
+            $table->index(['approval_request_id', 'modification_type'], 'dynamic_mods_request_type_idx');
+            $table->index(['step_id', 'is_applied'], 'dynamic_mods_step_applied_idx');
         });
 
         // Dynamic approver assignments (runtime approver changes)
@@ -74,11 +74,12 @@ return new class extends Migration
             $table->json('conditions')->nullable(); // When this rule applies
             $table->json('restrictions')->nullable(); // Limitations on modifications
             $table->boolean('requires_approval')->default(false); // Does the modification itself need approval?
-            $table->foreignId('approval_required_from_user_id')->nullable()->constrained('users')->onDelete('set null');
+            $table->unsignedBigInteger('approval_required_from_user_id')->nullable();
+            $table->foreign('approval_required_from_user_id', 'wf_mod_approval_user_fk')->references('id')->on('users')->onDelete('set null');
             $table->boolean('is_active')->default(true);
             $table->timestamps();
 
-            $table->index(['workflow_id', 'rule_type', 'is_active']);
+            $table->index(['workflow_id', 'rule_type', 'is_active'], 'wf_mod_rules_wf_type_active_idx');
         });
     }
 

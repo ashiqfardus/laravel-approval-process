@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->string('type')->comment('pending, approved, rejected, sent_back, edited, escalated, reminder');
             $table->text('message');
-            $table->json('channels')->default('["real-time"]')->comment('Notification channels: email, sms, real-time, push');
+            $table->json('channels')->nullable()->comment('Notification channels: email, sms, real-time, push');
             $table->json('data')->nullable()->comment('Additional context data');
             $table->boolean('is_read')->default(false);
             $table->timestamp('read_at')->nullable();

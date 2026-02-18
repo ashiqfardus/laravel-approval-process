@@ -184,7 +184,10 @@ class WeightageCalculator
                     if ($i === $approverCount - 1) {
                         $weights[] = $remaining;
                     } else {
-                        $weight = floor($remaining / 2);
+                        // Use a ratio that ensures decreasing values
+                        // First gets ~50%, second gets ~30%, third gets ~20%
+                        $ratio = ($approverCount - $i) / array_sum(range(1, $approverCount - $i));
+                        $weight = (int) floor($remaining * $ratio);
                         $weights[] = $weight;
                         $remaining -= $weight;
                     }

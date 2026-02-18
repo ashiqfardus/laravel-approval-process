@@ -9,6 +9,25 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | API Configuration
+    |--------------------------------------------------------------------------
+    | Configure API authentication middleware
+    | 
+    | Options:
+    |   - ['api', 'auth:sanctum'] - For Sanctum (SPA/mobile apps)
+    |   - ['api', 'auth:api'] - For Passport (OAuth2)
+    |   - ['web', 'auth'] - For web session auth (monolithic apps)
+    */
+    'api' => [
+        // API middleware - Examples: 'web,auth' | 'api,auth:sanctum' | 'api,auth:api' (JWT)
+        'middleware' => array_map('trim', explode(',', env('APPROVAL_API_MIDDLEWARE', 'web,auth'))),
+        
+        // Auth guard - Examples: 'web' | 'api' | 'sanctum' | 'jwt'
+        'guard' => env('APPROVAL_API_GUARD', 'web'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | UI Configuration
     |--------------------------------------------------------------------------
     | Enable/disable the built-in Blade UI
@@ -17,44 +36,80 @@ return [
     'ui' => [
         'enabled' => env('APPROVAL_UI_ENABLED', true),
         'framework' => env('APPROVAL_UI_FRAMEWORK', 'tailwind'), // tailwind, bootstrap
+        'layout' => env('APPROVAL_UI_LAYOUT', 'approval-process::layout'), // Custom layout: 'layouts.app' or default package layout
         'items_per_page' => 15,
         'enable_dark_mode' => true,
         'timezone' => env('APP_TIMEZONE', 'UTC'),
         
         /*
         |----------------------------------------------------------------------
-        | Approvable Models (For Blade UI Dropdowns)
+        | Admin Panel Middleware
         |----------------------------------------------------------------------
-        | Only used if UI is enabled
-        | List all models that can have approval workflows
-        | For SPA frontends, fetch this from your own API
+        | Middleware for the standalone admin panel at /approval-admin
+        | 
+        | For monolithic apps (Blade/Inertia):
+        |   - ['web', 'auth']
+        | 
+        | For API-first apps (Sanctum/JWT):
+        |   - ['web'] - No auth middleware, handle in frontend
+        |   - Or use custom middleware to check token
+        | 
+        | Examples:
+        |   - ['web', 'auth', 'can:manage-approvals'] - With permission
+        |   - [] - No middleware (public access)
         */
-        'approvable_models' => [
-            'App\Models\Offer' => 'Offer',
-            'App\Models\PurchaseOrder' => 'Purchase Order',
-            'App\Models\ExpenseClaim' => 'Expense Claim',
-            'App\Models\LeaveRequest' => 'Leave Request',
-            'App\Models\Invoice' => 'Invoice',
-            // Add more models here as needed
-        ],
-
+        'admin_panel_middleware' => explode(',', env('APPROVAL_ADMIN_MIDDLEWARE', 'web,auth')),
+        
         /*
         |----------------------------------------------------------------------
-        | Available Roles (For Blade UI Dropdowns)
+        | Widget Auto-Refresh Configuration
         |----------------------------------------------------------------------
-        | Only used if UI is enabled
-        | Roles that can be assigned as approvers
-        | For SPA frontends, fetch this from your own API
+        | Configure auto-refresh intervals for widgets (in milliseconds)
+        | Set to 0 to disable auto-refresh
         */
-        'available_roles' => [
-            'manager' => 'Manager',
-            'finance' => 'Finance',
-            'director' => 'Director',
-            'hr' => 'HR',
-            'ceo' => 'CEO',
-            'team_lead' => 'Team Lead',
-            // Add more roles here
+        'widget_refresh' => [
+            'stats' => env('APPROVAL_WIDGET_REFRESH_STATS', 30000),           // 30 seconds
+            'pending_approvals' => env('APPROVAL_WIDGET_REFRESH_PENDING', 10000), // 10 seconds
+            'activity_feed' => env('APPROVAL_WIDGET_REFRESH_ACTIVITY', 30000),    // 30 seconds
+            'workflows' => env('APPROVAL_WIDGET_REFRESH_WORKFLOWS', 0),           // Disabled by default
         ],
+        
+        /*
+        |----------------------------------------------------------------------
+        | Custom Authentication
+        |----------------------------------------------------------------------
+        | For advanced auth scenarios, you can inject custom JavaScript
+        | to configure the auth provider. Leave null for default behavior.
+        |
+        | Example:
+        | 'custom_auth_script' => 'window.ApprovalAuth = { getHeaders: () => ({}) };'
+        */
+        'custom_auth_script' => null,
+        
+        /*
+        |----------------------------------------------------------------------
+        | Login URL
+        |----------------------------------------------------------------------
+        | Where to redirect on 401 Unauthorized
+        */
+        'login_url' => env('APPROVAL_LOGIN_URL', '/login'),
+        
+        /*
+        |----------------------------------------------------------------------
+        | Dynamic Entities & Roles
+        |----------------------------------------------------------------------
+        | Entities and roles are now managed dynamically through the database.
+        | 
+        | - Entities: Stored in `approval_approvable_entities` table
+        | - Roles: Fetched from Spatie Permission or users table
+        | 
+        | API Endpoints:
+        |   GET /api/approval-process/entities - List all entities
+        |   GET /api/approval-process/roles - List all roles
+        |   GET /api/approval-process/entities/discover - Discover models/tables
+        |
+        | No configuration needed here!
+        */
     ],
 
     /*

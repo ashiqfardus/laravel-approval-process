@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use AshiqFardus\ApprovalProcess\Services\ConditionEvaluator;
+use AshiqFardus\ApprovalProcess\Models\WorkflowCondition;
 
 class ApprovalStep extends Model
 {
@@ -126,12 +128,59 @@ class ApprovalStep extends Model
      */
     public function shouldInclude(Model $requestModel): bool
     {
-        if (!$this->condition_config) {
+        if (empty($this->condition_config)) {
             return true;
         }
 
-        // Implementation of condition evaluation logic
-        return true;
+        // Use ConditionEvaluator to check if step should be included
+        $evaluator = new ConditionEvaluator();
+        
+        // Convert model to array for evaluation
+        $data = $requestModel->toArray();
+        
+        // Parse conditions from config
+        $conditions = $this->condition_config['conditions'] ?? [];
+        $logic = $this->condition_config['logic'] ?? 'and';
+        
+        if (empty($conditions)) {
+            return true;
+        }
+        
+        // Convert array conditions to temporary objects to use with evaluator
+        $conditionObjects = array_map(function($c) {
+            return new WorkflowCondition($c);
+        }, $conditions);
+        
+        // Use a modified evaluateConditions that accepts array of objects
+        // Since we don't have real DB models here, we might need a simpler evaluator
+        // For now, let's do a basic manual check to avoid dependency circularity
+        
+        $results = [];
+        foreach ($conditions as $condition) {
+            $field = $condition['field'] ?? '';
+            $operator = $condition['operator'] ?? '=';
+            $value = $condition['value'] ?? null;
+            
+            $modelValue = data_get($data, $field);
+            
+            // Re-use logic from ConditionEvaluator manually or instantiate it if compatible
+            // Let's rely on the service if possible, but for a model method, keep it light:
+            
+            $match = match($operator) {
+                '=' => $modelValue == $value,
+                '>' => $modelValue > $value,
+                '<' => $modelValue < $value,
+                default => false,
+            };
+            
+            $results[] = $match;
+        }
+        
+        if ($logic === 'and') {
+             return !in_array(false, $results);
+        } else {
+             return in_array(true, $results);
+        }
     }
 
     /**

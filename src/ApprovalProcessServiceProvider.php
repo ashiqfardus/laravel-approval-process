@@ -3,6 +3,7 @@
 namespace AshiqFardus\ApprovalProcess;
 
 use Illuminate\Support\ServiceProvider;
+
 use Illuminate\Database\Migrations\Migrator;
 use AshiqFardus\ApprovalProcess\Commands\PublishAssetsCommand;
 use AshiqFardus\ApprovalProcess\Commands\MakeMigrationCommand;
@@ -13,6 +14,9 @@ use AshiqFardus\ApprovalProcess\Commands\SendRemindersCommand;
 use AshiqFardus\ApprovalProcess\Commands\EndDelegationsCommand;
 use AshiqFardus\ApprovalProcess\Services\ApprovalEngine;
 use AshiqFardus\ApprovalProcess\Services\ApproverResolver;
+use AshiqFardus\ApprovalProcess\Models\ApprovalStep;
+use AshiqFardus\ApprovalProcess\Models\Approver;
+use AshiqFardus\ApprovalProcess\Models\ApprovalRequest;
 
 class ApprovalProcessServiceProvider extends ServiceProvider
 {
@@ -40,22 +44,28 @@ class ApprovalProcessServiceProvider extends ServiceProvider
             __DIR__ . '/../database/migrations' => database_path('migrations'),
         ], 'approval-process-migrations');
 
-        // Publish views
-        $this->publishes([
-            __DIR__ . '/../resources/views' => resource_path('views/vendor/approval-process'),
-        ], 'approval-process-views');
 
-        // Publish assets
+
+        // Publish built assets (from dist folder)
         $this->publishes([
-            __DIR__ . '/../resources/assets' => public_path('vendor/approval-process'),
+            __DIR__ . '/../dist' => public_path('vendor/approval-process'),
         ], 'approval-process-assets');
+        
+        // Publish Vue components for extraction
+        $this->publishes([
+            __DIR__ . '/../resources/js/vue' => resource_path('js/vendor/approval-process/vue'),
+        ], 'approval-process-vue');
+        
+        // Publish core widgets for customization
+        $this->publishes([
+            __DIR__ . '/../resources/js/core' => resource_path('js/vendor/approval-process/core'),
+        ], 'approval-process-core');
 
         // Load API routes (always)
         $this->loadRoutesFrom(__DIR__ . '/../routes/api.php');
 
-        // Load UI routes and views (only if enabled)
+        // Load UI routes (only if enabled)
         if (config('approval-process.ui.enabled', true)) {
-            $this->loadViewsFrom(__DIR__ . '/../resources/views', 'approval-process');
             $this->loadRoutesFrom(__DIR__ . '/../routes/web.php');
         }
 

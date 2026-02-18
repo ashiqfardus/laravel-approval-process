@@ -16,9 +16,10 @@ use AshiqFardus\ApprovalProcess\Http\Controllers\SignatureController;
 use AshiqFardus\ApprovalProcess\Http\Controllers\AnalyticsController;
 use AshiqFardus\ApprovalProcess\Http\Controllers\ReportController;
 use AshiqFardus\ApprovalProcess\Http\Controllers\Api\WeightageController;
+use AshiqFardus\ApprovalProcess\Http\Controllers\Api\EntityController;
 
 Route::prefix(config('approval-process.paths.api_prefix'))
-    ->middleware(['api', 'auth:api'])
+    ->middleware(config('approval-process.api.middleware', ['api', 'auth:sanctum']))
     ->group(function () {
         // Workflow routes
         Route::apiResource('workflows', WorkflowController::class);
@@ -115,6 +116,17 @@ Route::prefix(config('approval-process.paths.api_prefix'))
         Route::get('dashboard/pending', [DashboardController::class, 'pending']);
         Route::get('dashboard/approved', [DashboardController::class, 'approved']);
         Route::get('dashboard/rejected', [DashboardController::class, 'rejected']);
+
+        // Entities & Roles (for dynamic dropdowns)
+        Route::get('entities', [EntityController::class, 'index']);
+        Route::get('entities/connections', [EntityController::class, 'connections']);
+        Route::get('entities/discover', [EntityController::class, 'discover']);
+        Route::post('entities', [EntityController::class, 'store']);
+        Route::put('entities/{id}', [EntityController::class, 'update']);
+        Route::delete('entities/{id}', [EntityController::class, 'destroy']);
+        Route::get('roles', [EntityController::class, 'roles']);
+        Route::get('users', [EntityController::class, 'users']);
+
 
         // Document attachment routes
         Route::get('requests/{request}/attachments', [AttachmentController::class, 'index']);

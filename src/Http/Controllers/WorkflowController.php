@@ -152,8 +152,10 @@ class WorkflowController extends Controller
             'escalation_strategy' => $request->input('escalation_strategy'),
             'allows_delegation' => $request->input('allows_delegation', true),
             'allows_partial_approval' => $request->input('allows_partial_approval', false),
+            'minimum_approval_percentage' => $request->input('minimum_approval_percentage', 100),
             'condition_config' => $request->input('condition_config'),
         ]);
+
 
         $step->load('approvers');
         return response()->json($step, 201);
@@ -192,6 +194,7 @@ class WorkflowController extends Controller
             'escalation_strategy',
             'allows_delegation',
             'allows_partial_approval',
+            'minimum_approval_percentage',
             'condition_config',
         ]));
 
